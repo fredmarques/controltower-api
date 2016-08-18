@@ -14,11 +14,19 @@
     "build:npm": "babel --ignore node_modules,dist,tasks --out-dir ./dist/npm .",
     "postbuild:npm": "babel-node ./tasks/npmPostBuild.js",
     "publish:npm": "npm run build:npm && npm publish dist/npm",
+    "build:aws": "npm run build:npm",
+    "prebuild:aws": "babel-node tasks/awsPreBuild.js",
+    "postbuild:aws": "babel-node tasks/awsPostBuild.js",
+    "create:aws": "claudia create --region us-east-1 --source ./dist/aws/ --api-module aws",
+    "destroy:aws": "claudia destroy --source ./dist/aws/ --api-module aws",
+    "publish:aws": "claudia update --source ./dist/aws/",
+    "prepublish:aws": "npm run build:aws",
     "ppp": "npm version patch && git push && git push --tags && npm run publish:npm",
     "mpp": "npm version minor && git push && git push --tags && npm run publish:npm"
   },
   "babel": {
     "plugins": [
+      "add-module-exports",
       "transform-es2015-modules-commonjs",
       "transform-object-rest-spread"
     ]
@@ -28,6 +36,7 @@
   },
   "devDependencies": {
     "babel-cli": "^6.11.4",
+    "babel-plugin-add-module-exports": "^0.2.1",
     "babel-plugin-transform-es2015-modules-commonjs": "^6.11.5",
     "babel-plugin-transform-object-rest-spread": "^6.8.0",
     "eslint": "^3.3.1",
@@ -52,5 +61,9 @@
   "bugs": {
     "url": "https://github.com/fczuardi/controltower-api/issues"
   },
-  "homepage": "https://github.com/fczuardi/controltower-api#readme"
+  "homepage": "https://github.com/fczuardi/controltower-api#readme",
+  "dependencies": {
+    "aws-sdk": "^2.5.1",
+    "claudia-api-builder": "^1.5.1"
+  }
 }
