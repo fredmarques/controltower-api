@@ -11,8 +11,9 @@
   "scripts": {
     "info": "npm-scripts-info",
     "start": "NODE_DEBUG=dev babel-node ./src/index.js",
-    "build:npm": "babel --ignore node_modules,dist,tasks --out-dir ./dist/npm .",
-    "postbuild:npm": "babel-node ./tasks/npmPostBuild.js",
+    "build:npm": "babel src --out-dir ./dist/npm",
+    "prebuild:npm": "babel-node ./tasks/npmPreBuild.js",
+    "postbuild:npm": "babel-node ./tasks/npmPostBuild.js && tree dist",
     "publish:npm": "npm run build:npm && npm publish dist/npm",
     "build:aws": "npm run build:npm",
     "prebuild:aws": "babel-node tasks/awsPreBuild.js",
