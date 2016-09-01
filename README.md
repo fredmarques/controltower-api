@@ -11,7 +11,7 @@ This document is a **draft**!
 | endpoint | methods | requires authentication |
 |----------|------|---------|
 | ```/v1/customers``` | [POST](#create-a-customer) | no |
-| ```/v1/customer/{ customerId }``` | [GET](#get-customer-data) | yes |
+| ```/v1/customer/{ customerId }``` | [GET](#get-customer-info) | yes |
 | ```/v1/bots``` | [POST](#create-a-bot) | yes |
 | ```/v1/bot/{ botId }``` | [GET](#get-bot-config), [POST](#update-bot-config) | yes |
 | ```/v1/chats``` | [POST](#create-a-chat) | yes |
