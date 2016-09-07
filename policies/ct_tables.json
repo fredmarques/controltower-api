@@ -1,0 +1,13 @@
+{
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:PutItem"
+            ],
+            "Resource": [
+                "arn:aws:dynamodb:us-east-1:362338258830:table/ct_*"
+            ]
+        }
+    ]
+}
