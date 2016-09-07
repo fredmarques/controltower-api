@@ -46,12 +46,13 @@ GET ```/v1/customer/{ customerId }```
 - 200
 ```
 {
+    "id": "17d771f6-9471-44fa-878b-fc6b31cac48a"
     "bots": [
         {
-            id: "fdf988fc-a8b1-495c-997b-3c52c976d0a4"
+            id: "09e0da8f-6335-4f7f-8202-6ac76a7ec3d0"
         },
         {
-            id: "a2d13204-6835-4a47-b55a-4ef84a3fc52b"
+            id: "aa3de8a5-9237-4911-b133-a88036032ed5"
         }
     ],
     "facebook": {
@@ -81,7 +82,8 @@ POST ```/v1/bot/{ botId }```
 
 ```
 {
-    "id": "876548765",
+    "id": "0263dfd3-5cf7-4575-acce-5b30edf2784c",
+    "customerId": "17d771f6-9471-44fa-878b-fc6b31cac48a",
     "facebook": {
         "pages": [
             {
