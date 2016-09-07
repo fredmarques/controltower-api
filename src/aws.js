@@ -1,14 +1,29 @@
 import ApiBuilder from 'claudia-api-builder';
 import AWS from 'aws-sdk';
 import uuid from 'node-uuid';
+import fetch from 'node-fetch';
 
 const api = new ApiBuilder();
 
+const fbApiUrl = 'https://graph.facebook.com';
+
 api.post('/v1/customers', req => {
-    console.log('request.pathParams', JSON.stringify(req.pathParams));
-    console.log('req.body', req.body);
-    // const accessToken = req.body.accessToken;
-    return 'bar';
+    const accessToken = req.body.accessToken;
+    // test if the acessToken is a valid facebook token
+    const url = `${fbApiUrl}/me?access_token=${accessToken}`;
+    console.log('url', url);
+    return fetch(url)
+        .then(res => res.json())
+        .then(json => {
+            if (json.error) {
+                throw JSON.stringify(json);
+            }
+            return json;
+        });
+}, {
+    error: {
+        contentType: 'application/json'
+    }
 });
 
 // Create a bot
