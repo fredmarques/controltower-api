@@ -1,12 +1,23 @@
 {
   "name": "controltower-api",
   "version": "0.1.5",
-  "main": "./src/index.js",
+  "description": "API for the controltower front-end",
+  "keywords": [
+    "calamar",
+    "controltower",
+    "s3",
+    "aws"
+  ],
+  "homepage": "https://github.com/fczuardi/controltower-api#readme",
+  "bugs": {
+    "url": "https://github.com/fczuardi/controltower-api/issues"
+  },
   "license": "AGPL-3.0",
-  "scripts-info": {
-    "build:npm": "Builds the transpiled npm package under dist/npm",
-    "ppp": "Increases the version patch number, push to github and publish to npm",
-    "mpp": "Increases the version minor number, push to github and publish to npm"
+  "author": "Fabricio C Zuardi",
+  "main": "./src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fczuardi/controltower-api.git"
   },
   "scripts": {
     "info": "npm-scripts-info",
@@ -18,22 +29,17 @@
     "build:aws": "npm run build:npm",
     "prebuild:aws": "babel-node tasks/awsPreBuild.js",
     "postbuild:aws": "babel-node tasks/awsPostBuild.js",
-    "create:aws": "claudia create --region us-east-1 --source ./dist/aws/ --api-module aws",
+    "create:aws": "claudia create --region us-east-1 --source ./dist/aws/ --api-module aws --policies ./policies/*.json",
     "destroy:aws": "claudia destroy --source ./dist/aws/ --api-module aws",
     "publish:aws": "claudia update --source ./dist/aws/",
     "prepublish:aws": "npm run build:aws",
     "ppp": "npm version patch && git push && git push --tags && npm run publish:npm",
     "mpp": "npm version minor && git push && git push --tags && npm run publish:npm"
   },
-  "babel": {
-    "plugins": [
-      "add-module-exports",
-      "transform-es2015-modules-commonjs",
-      "transform-object-rest-spread"
-    ]
-  },
-  "eslintConfig": {
-    "extends": "calamar"
+  "dependencies": {
+    "aws-sdk": "^2.5.1",
+    "claudia-api-builder": "^1.5.1",
+    "node-uuid": "^1.4.7"
   },
   "devDependencies": {
     "babel-cli": "^6.11.4",
@@ -47,24 +53,19 @@
     "npm-scripts-info": "^0.3.6",
     "shelljs": "^0.7.3"
   },
-  "description": "API for the controltower front-end",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/fczuardi/controltower-api.git"
+  "scripts-info": {
+    "build:npm": "Builds the transpiled npm package under dist/npm",
+    "ppp": "Increases the version patch number, push to github and publish to npm",
+    "mpp": "Increases the version minor number, push to github and publish to npm"
   },
-  "keywords": [
-    "calamar",
-    "controltower",
-    "s3",
-    "aws"
-  ],
-  "author": "Fabricio C Zuardi",
-  "bugs": {
-    "url": "https://github.com/fczuardi/controltower-api/issues"
+  "babel": {
+    "plugins": [
+      "add-module-exports",
+      "transform-es2015-modules-commonjs",
+      "transform-object-rest-spread"
+    ]
   },
-  "homepage": "https://github.com/fczuardi/controltower-api#readme",
-  "dependencies": {
-    "aws-sdk": "^2.5.1",
-    "claudia-api-builder": "^1.5.1"
+  "eslintConfig": {
+    "extends": "calamar"
   }
 }
