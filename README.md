@@ -14,8 +14,8 @@ This document is a **draft**!
 | ```/v1/customer/{ customerId }``` | [GET](#get-customer-info) | yes |
 | ```/v1/bots``` | [POST](#create-a-bot) | yes |
 | ```/v1/bot/{ botId }``` | [GET](#get-bot-config), [POST](#update-bot-config) | yes |
-| ```/v1/chats``` | [POST](#create-a-chat) | yes |
-| ```/v1/chat/{ chatId }``` | GET, POST | yes |
+| ```/v1/users``` | [POST](#create-a-user) | yes |
+| ```/v1/user/{ userId }``` | [GET](#get-user-info), [POST](#update-user-info) | yes |
 
 ---
 
@@ -113,24 +113,28 @@ POST ```/v1/bot/{ botId }```
 ##### Request
 POST ```/v1/bot/{ botId }```
 
-### Chats
-(I am not happy with this name, we might revisit this in next versions)
+### Users
 
-Conversations between a [bot](#bot) and a
-[recipient](#users) (user/group/channel).
-One same bot can have properties with different values on different
-chats. For example: A bot Bob can be active for user Alice in a Bob-Alice chat
-while muted for user Charlie in a Bob-Charlie chat.
+An user is a recipient that a [bot](#bot) can chat to. Examples: a messenger
+user, a chat group, an IRC channel…
 
-#### Create a chat
+#### Create a user
 
 ##### Request
-POST ```/v1/chats```
+POST ```/v1/users```
 
 ##### Parameters
 
 - ```botId```
-- ```recipientId```
+
+#### Get user info
+
+GET ```/v1/user/{ userId }```
+
+#### Update user info
+
+POST ```/v1/user/{ userId }```
+
 
 
 [facebooklogin]: https://developers.facebook.com/docs/facebook-login/web
