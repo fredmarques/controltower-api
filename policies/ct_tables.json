@@ -1,0 +1,13 @@
+{
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:PutItem"
+            ],
+            "Resource": [
+                "*"
+            ]
+        }
+    ]
+}
