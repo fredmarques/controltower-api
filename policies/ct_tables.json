@@ -3,6 +3,7 @@
         {
             "Effect": "Allow",
             "Action": [
+                "dynamodb:GetItem",
                 "dynamodb:Query",
                 "dynamodb:PutItem"
             ],

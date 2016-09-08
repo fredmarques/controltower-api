@@ -17,6 +17,21 @@ This document is a **draft**!
 | ```/v1/users``` | [POST](#create-a-user) | yes |
 | ```/v1/users/{ userId }``` | [GET](#get-user-info), [PUT](#update-user-info) | yes |
 
+## Authenticated requests
+
+For using endpoints that requires authentication, you must pass an
+```Authentication``` header with the value ```Bearer your_access_token```.
+The access token for the v1 of this api is a Facebook accessToken that
+can be obtained with a [Facebook Login Popup][facebooklogin].
+
+Example:
+```shell
+curl --request GET \
+  --url https://api.example.com/latest/v1/customers/048c37f5-17fb-4f3f-82de-8014230d3922 \
+  --header 'authorization: Bearer EAA...ZD' \
+  --header 'content-type: application/json'
+```
+
 ---
 
 ### Customers
@@ -32,11 +47,6 @@ Used by the Sign Up feature.
 
 ##### Request
 POST ```/v1/customers```
-
-##### Parameters
-
-- ```accessToken``` a Facebook accessToken.
-This can be obtained with a [Facebook Login Popup][facebooklogin]
 
 ##### Responses
 - 201 (application/json)
