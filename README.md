@@ -10,12 +10,12 @@ This document is a **draft**!
 
 | endpoint | methods | requires authentication |
 |----------|------|---------|
-| ```/v1/customers``` | [POST](#create-a-customer) | no |
-| ```/v1/customer/{ customerId }``` | [GET](#get-customer-info) | yes |
+| ```/v1/customers``` | [POST](#create-a-customer) | yes |
+| ```/v1/customers/{ customerId }``` | [GET](#get-customer-info), [PUT](#update-customer-info) | yes |
 | ```/v1/bots``` | [POST](#create-a-bot) | yes |
-| ```/v1/bot/{ botId }``` | [GET](#get-bot-config), [POST](#update-bot-config) | yes |
+| ```/v1/bots/{ botId }``` | [GET](#get-bot-config), [PUT](#update-bot-config) | yes |
 | ```/v1/users``` | [POST](#create-a-user) | yes |
-| ```/v1/user/{ userId }``` | [GET](#get-user-info), [POST](#update-user-info) | yes |
+| ```/v1/users/{ userId }``` | [GET](#get-user-info), [PUT](#update-user-info) | yes |
 
 ---
 
@@ -40,7 +40,7 @@ This can be obtained with a [Facebook Login Popup][facebooklogin]
 
 #### Get customer info
 ##### Request
-GET ```/v1/customer/{ customerId }```
+GET ```/v1/customers/{ customerId }```
 
 ##### Response
 - 200
@@ -62,6 +62,11 @@ GET ```/v1/customer/{ customerId }```
 }
 ```
 
+#### Update customer info
+##### Request
+PUT ```/v1/customers/{ customerId }```
+
+
 ### Bots
 
 Programs configured by system [customers](customers), that can listen/reply to [users](#users) on chat platforms.
@@ -76,7 +81,7 @@ POST ```/v1/bots```
 
 #### Get bot config
 ##### Request
-POST ```/v1/bot/{ botId }```
+POST ```/v1/bots/{ botId }```
 ##### Response
 - 200
 
@@ -113,7 +118,7 @@ POST ```/v1/bot/{ botId }```
 #### Update bot config
 
 ##### Request
-POST ```/v1/bot/{ botId }```
+PUT ```/v1/bots/{ botId }```
 
 ### Users
 
@@ -131,11 +136,11 @@ POST ```/v1/users```
 
 #### Get user info
 
-GET ```/v1/user/{ userId }```
+GET ```/v1/users/{ userId }```
 
 #### Update user info
 
-POST ```/v1/user/{ userId }```
+PUT ```/v1/users/{ userId }```
 
 
 
