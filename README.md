@@ -38,6 +38,51 @@ POST ```/v1/customers```
 - ```accessToken``` a Facebook accessToken.
 This can be obtained with a [Facebook Login Popup][facebooklogin]
 
+##### Responses
+- 201 (application/json)
+```json
+{
+	"id": "1384770a-d4eb-4566-9d80-b0be5b8c2c61",
+	"facebookId": "10154544223979636",
+	"name": "Fabricio Campos Zuardi",
+	"email": "fabricio@fabricio.org",
+	"bots": []
+}
+```
+- 500 (text/plain)
+```text
+{
+	"error": {
+		"message": "The facebook id 10154544223979636 is already connected to an existing user",
+		"userId": "1384770a-d4eb-4566-9d80-b0be5b8c2c61"
+	}
+}
+```
+- 500 (text/plain)
+```text
+{
+	"error": {
+		"message": "Error validating access token: The session is invalid because the user logged out.",
+		"type": "OAuthException",
+		"code": 190,
+		"error_subcode": 467,
+		"fbtrace_id": "DIOWQtQq2KC"
+	}
+}
+```
+- 500 (text/plain)
+```text
+{
+	"error": {
+		"message": "Error validating access token: Session has expired on Wednesday, 07-Sep-16 22:00:00 PDT. The current time is Wednesday, 07-Sep-16 22:05:47 PDT.",
+		"type": "OAuthException",
+		"code": 190,
+		"error_subcode": 463,
+		"fbtrace_id": "Cj21SvLn4aZ"
+	}
+}
+```
+
 #### Get customer info
 ##### Request
 GET ```/v1/customers/{ customerId }```
