@@ -11,18 +11,19 @@ const dynamo = new AWS.DynamoDB.DocumentClient();
 // Create a customer
 api.post('/v1/customers', req => {
     const accessToken = req.body.accessToken;
-    // test if the acessToken is a valid facebook token
-    getFbUser(accessToken).then(fbUser => {
-        // Check to see if there is already an user with this facebookId
-        findCustomersByFacebookId(fbUser.id).then(data => {
+    // check if the acessToken is a valid facebook token
+    // then check if there is already a customer connected to that facebookId
+    // and if not, create the new customer
+    return getFbUser(accessToken).then(fbUser =>
+        findCustomersByFacebookId(dynamo, fbUser.id).then(data => {
             if (data.Count > 0) {
                 throw JSON.stringify(
                     existingFacebookIdError(fbUser.id, data.Items[0].id)
                 );
             }
             return createCustomer(dynamo, fbUser.id, fbUser.name, fbUser.email);
-        });
-    });
+        })
+    );
 }, {
     success: { code: 201 },
     error: { contentType: 'text/plain' }
