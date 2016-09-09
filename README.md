@@ -10,12 +10,27 @@ This document is a **draft**!
 
 | endpoint | methods | requires authentication |
 |----------|------|---------|
-| ```/v1/customers``` | [POST](#create-a-customer) | no |
-| ```/v1/customer/{ customerId }``` | [GET](#get-customer-info) | yes |
+| ```/v1/customers``` | [POST](#create-a-customer) | yes |
+| ```/v1/customers/{ customerId }``` | [GET](#get-customer-info), [PUT](#update-customer-info) | yes |
 | ```/v1/bots``` | [POST](#create-a-bot) | yes |
-| ```/v1/bot/{ botId }``` | [GET](#get-bot-config), [POST](#update-bot-config) | yes |
+| ```/v1/bots/{ botId }``` | [GET](#get-bot-config), [PUT](#update-bot-config) | yes |
 | ```/v1/users``` | [POST](#create-a-user) | yes |
-| ```/v1/user/{ userId }``` | [GET](#get-user-info), [POST](#update-user-info) | yes |
+| ```/v1/users/{ userId }``` | [GET](#get-user-info), [PUT](#update-user-info) | yes |
+
+## Authenticated requests
+
+For using endpoints that requires authentication, you must pass an
+```Authentication``` header with the value ```Bearer your_access_token```.
+The access token for the v1 of this api is a Facebook accessToken that
+can be obtained with a [Facebook Login Popup][facebooklogin].
+
+Example:
+```shell
+curl --request GET \
+  --url https://api.example.com/latest/v1/customers/048c37f5-17fb-4f3f-82de-8014230d3922 \
+  --header 'authorization: Bearer EAA...ZD' \
+  --header 'content-type: application/json'
+```
 
 ---
 
@@ -33,25 +48,66 @@ Used by the Sign Up feature.
 ##### Request
 POST ```/v1/customers```
 
-##### Parameters
-
-- ```accessToken``` a Facebook accessToken.
-This can be obtained with a [Facebook Login Popup][facebooklogin]
+##### Responses
+- 201 (application/json)
+```json
+{
+	"id": "1384770a-d4eb-4566-9d80-b0be5b8c2c61",
+	"facebookId": "10154544223979636",
+	"name": "Fabricio Campos Zuardi",
+	"email": "fabricio@fabricio.org",
+	"bots": []
+}
+```
+- 500 (text/plain)
+```text
+{
+	"error": {
+		"message": "The facebook id 10154544223979636 is already connected to an existing user",
+		"userId": "1384770a-d4eb-4566-9d80-b0be5b8c2c61"
+	}
+}
+```
+- 500 (text/plain)
+```text
+{
+	"error": {
+		"message": "Error validating access token: The session is invalid because the user logged out.",
+		"type": "OAuthException",
+		"code": 190,
+		"error_subcode": 467,
+		"fbtrace_id": "DIOWQtQq2KC"
+	}
+}
+```
+- 500 (text/plain)
+```text
+{
+	"error": {
+		"message": "Error validating access token: Session has expired on Wednesday, 07-Sep-16 22:00:00 PDT. The current time is Wednesday, 07-Sep-16 22:05:47 PDT.",
+		"type": "OAuthException",
+		"code": 190,
+		"error_subcode": 463,
+		"fbtrace_id": "Cj21SvLn4aZ"
+	}
+}
+```
 
 #### Get customer info
 ##### Request
-GET ```/v1/customer/{ customerId }```
+GET ```/v1/customers/{ customerId }```
 
 ##### Response
 - 200
 ```
 {
+    "id": "17d771f6-9471-44fa-878b-fc6b31cac48a"
     "bots": [
         {
-            id: "fdf988fc-a8b1-495c-997b-3c52c976d0a4"
+            id: "09e0da8f-6335-4f7f-8202-6ac76a7ec3d0"
         },
         {
-            id: "a2d13204-6835-4a47-b55a-4ef84a3fc52b"
+            id: "aa3de8a5-9237-4911-b133-a88036032ed5"
         }
     ],
     "facebook": {
@@ -60,6 +116,11 @@ GET ```/v1/customer/{ customerId }```
     }
 }
 ```
+
+#### Update customer info
+##### Request
+PUT ```/v1/customers/{ customerId }```
+
 
 ### Bots
 
@@ -75,13 +136,14 @@ POST ```/v1/bots```
 
 #### Get bot config
 ##### Request
-POST ```/v1/bot/{ botId }```
+POST ```/v1/bots/{ botId }```
 ##### Response
 - 200
 
 ```
 {
-    "id": "876548765",
+    "id": "0263dfd3-5cf7-4575-acce-5b30edf2784c",
+    "customerId": "17d771f6-9471-44fa-878b-fc6b31cac48a",
     "facebook": {
         "pages": [
             {
@@ -111,7 +173,7 @@ POST ```/v1/bot/{ botId }```
 #### Update bot config
 
 ##### Request
-POST ```/v1/bot/{ botId }```
+PUT ```/v1/bots/{ botId }```
 
 ### Users
 
@@ -129,11 +191,11 @@ POST ```/v1/users```
 
 #### Get user info
 
-GET ```/v1/user/{ userId }```
+GET ```/v1/users/{ userId }```
 
 #### Update user info
 
-POST ```/v1/user/{ userId }```
+PUT ```/v1/users/{ userId }```
 
 
 
