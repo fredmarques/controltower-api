@@ -46,57 +46,28 @@ curl --request GET \
 The customers of the system.
 Example: a paying customer that has access to an
 administrative interface where she can setup programs ([bots](#bots))
-that interact ([chat](#chats)) with her customers ([users](#users)).
+that interact/chat with her customers ([users](#users)).
 
 #### Create a customer
 
-Used by the Sign Up feature.
+Will attempt to create a new customer connected with the Facebook user ID that
+generated the login access token.
+
+Returns the created Controltower user, or the existing one if there is one already
+for that Facebook user ID.
 
 ##### Request
 POST ```/v1/customers```
 
-##### Responses
+##### Successful Response
 - 201 (application/json)
 ```json
 {
-	"id": "1384770a-d4eb-4566-9d80-b0be5b8c2c61",
-	"facebookId": "10154544223979636",
-	"name": "Fabricio Campos Zuardi",
+	"id": "048c37f5-17fb-4f3f-82de-8014230d3922",
 	"email": "fabricio@fabricio.org",
+	"name": "Fabricio Campos Zuardi",
+	"facebookId": "10154544223979636",
 	"bots": []
-}
-```
-- 500 (text/plain)
-```text
-{
-	"error": {
-		"message": "The facebook id 10154544223979636 is already connected to an existing user",
-		"userId": "1384770a-d4eb-4566-9d80-b0be5b8c2c61"
-	}
-}
-```
-- 500 (text/plain)
-```text
-{
-	"error": {
-		"message": "Error validating access token: The session is invalid because the user logged out.",
-		"type": "OAuthException",
-		"code": 190,
-		"error_subcode": 467,
-		"fbtrace_id": "DIOWQtQq2KC"
-	}
-}
-```
-- 500 (text/plain)
-```text
-{
-	"error": {
-		"message": "Error validating access token: Session has expired on Wednesday, 07-Sep-16 22:00:00 PDT. The current time is Wednesday, 07-Sep-16 22:05:47 PDT.",
-		"type": "OAuthException",
-		"code": 190,
-		"error_subcode": 463,
-		"fbtrace_id": "Cj21SvLn4aZ"
-	}
 }
 ```
 
@@ -104,23 +75,15 @@ POST ```/v1/customers```
 ##### Request
 GET ```/v1/customers/{ customerId }```
 
-##### Response
-- 200
-```
+##### Successful Response
+- 200 (application/json)
+```json
 {
-    "id": "17d771f6-9471-44fa-878b-fc6b31cac48a"
-    "bots": [
-        {
-            id: "09e0da8f-6335-4f7f-8202-6ac76a7ec3d0"
-        },
-        {
-            id: "aa3de8a5-9237-4911-b133-a88036032ed5"
-        }
-    ],
-    "facebook": {
-        "name": "Charles McGill",
-        "id": "101...36"
-    }
+	"id": "048c37f5-17fb-4f3f-82de-8014230d3922",
+	"email": "fabricio@fabricio.org",
+	"name": "Fabricio Campos Zuardi",
+	"facebookId": "10154544223979636",
+	"bots": []
 }
 ```
 
@@ -128,6 +91,7 @@ GET ```/v1/customers/{ customerId }```
 ##### Request
 PUT ```/v1/customers/{ customerId }```
 
+TBD
 
 ### Bots
 
@@ -137,13 +101,14 @@ Programs configured by system [customers](customers), that can listen/reply to [
 ##### Request
 POST ```/v1/bots```
 
-##### Parameters
-
-- ```customerId``` the id of the customer
+TBD
 
 #### Get bot config
 ##### Request
 POST ```/v1/bots/{ botId }```
+
+TBD
+
 ##### Response
 - 200
 
@@ -182,6 +147,8 @@ POST ```/v1/bots/{ botId }```
 ##### Request
 PUT ```/v1/bots/{ botId }```
 
+TBD
+
 ### Users
 
 An user is a recipient that a [bot](#bot) can chat to. Examples: a messenger
@@ -192,6 +159,8 @@ user, a chat group, an IRC channel…
 ##### Request
 POST ```/v1/users```
 
+TBD
+
 ##### Parameters
 
 - ```botId```
@@ -200,10 +169,70 @@ POST ```/v1/users```
 
 GET ```/v1/users/{ userId }```
 
+TBD
+
 #### Update user info
 
 PUT ```/v1/users/{ userId }```
 
+TBD
+
+### Examples of error responses
+
+- 500 (text/plain)
+```text
+{
+	"error": {
+		"message": "No authorization header"
+	}
+}
+```
+- 500 (text/plain)
+```text
+{
+	"error": {
+		"message": "Malformed access token",
+		"type": "OAuthException",
+		"code": 190,
+		"fbtrace_id": "Aj+ON1w7Fl8"
+	}
+}
+```
+- 500 (text/plain)
+```text
+{
+	"error": {
+		"message": "The access token could not be decrypted",
+		"type": "OAuthException",
+		"code": 190,
+		"fbtrace_id": "HJYUlys/FGb"
+	}
+}
+```
+- 500 (text/plain)
+```text
+{
+	"error": {
+		"message": "Error validating access token: The session is invalid because the user logged out.",
+		"type": "OAuthException",
+		"code": 190,
+		"error_subcode": 467,
+		"fbtrace_id": "DIOWQtQq2KC"
+	}
+}
+```
+- 500 (text/plain)
+```text
+{
+	"error": {
+		"message": "Error validating access token: Session has expired on Wednesday, 07-Sep-16 22:00:00 PDT. The current time is Wednesday, 07-Sep-16 22:05:47 PDT.",
+		"type": "OAuthException",
+		"code": 190,
+		"error_subcode": 463,
+		"fbtrace_id": "Cj21SvLn4aZ"
+	}
+}
+```
 
 
 [facebooklogin]: https://developers.facebook.com/docs/facebook-login/web

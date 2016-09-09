@@ -1,12 +1,9 @@
-const noAuthorizationHeaderError = 'No authorization header';
-const existingFacebookIdError = (facebookId, userId) => ({
+const noAuthorizationHeaderError = JSON.stringify({
     error: {
-        message: `The facebook id ${facebookId} is already connected to an existing user`,
-        userId
+        message: 'No authorization header'
     }
 });
 
 export {
-    noAuthorizationHeaderError,
-    existingFacebookIdError
+    noAuthorizationHeaderError
 };

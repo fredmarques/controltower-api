@@ -4,7 +4,7 @@ import AWS from 'aws-sdk';
 import uuid from 'node-uuid';
 import { getFbUser } from './facebook';
 import { getCustomer, findCustomersByFacebookId, createCustomer } from './dynamodb';
-import { noAuthorizationHeaderError, existingFacebookIdError } from './errors';
+import { noAuthorizationHeaderError } from './errors';
 
 const api = new ApiBuilder();
 const dynamo = new AWS.DynamoDB.DocumentClient();
@@ -28,9 +28,7 @@ api.post('/v1/customers', req =>
     auth(getAccessToken(req)).then(fbUser =>
         findCustomersByFacebookId(dynamo, fbUser.id).then(data => {
             if (data.Count > 0) {
-                throw JSON.stringify(
-                    existingFacebookIdError(fbUser.id, data.Items[0].id)
-                );
+                return data.Items[0];
             }
             return createCustomer(dynamo, fbUser.id, fbUser.name, fbUser.email);
         })
@@ -44,6 +42,8 @@ api.get('/v1/customers/{customerId}', req => {
     const customerId = req.pathParams.customerId;
     return auth(getAccessToken(req)).then(() =>
         getCustomer(dynamo, customerId));
+},{
+    error: { contentType: 'text/plain' }
 });
 
 // Create a bot
