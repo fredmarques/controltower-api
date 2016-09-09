@@ -5,7 +5,8 @@
             "Action": [
                 "dynamodb:GetItem",
                 "dynamodb:Query",
-                "dynamodb:PutItem"
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem"
             ],
             "Resource": [
                 "*"
