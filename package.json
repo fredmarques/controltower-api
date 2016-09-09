@@ -20,6 +20,7 @@
     "postbuild:aws": "babel-node tasks/awsPostBuild.js && tree dist/aws",
     "create:aws": "claudia create --region us-east-1 --source ./dist/aws/ --api-module aws --policies ./policies/*.json",
     "destroy:aws": "claudia destroy --source ./dist/aws/ --api-module aws",
+    "postdestroy:aws": "rm -f ./dist/aws/claudia.json",
     "publish:aws": "claudia update --source ./dist/aws/",
     "prepublish:aws": "npm run build:aws",
     "ppp": "npm version patch && git push && git push --tags && npm run publish:npm",
@@ -67,6 +68,8 @@
   "dependencies": {
     "aws-sdk": "^2.5.1",
     "claudia-api-builder": "^1.5.1",
+    "flat": "^2.0.1",
+    "lodash.get": "^4.4.2",
     "node-fetch": "^1.6.0",
     "node-uuid": "^1.4.7"
   }

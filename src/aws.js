@@ -3,7 +3,12 @@ import ApiBuilder from 'claudia-api-builder';
 import AWS from 'aws-sdk';
 import uuid from 'node-uuid';
 import { getFbUser } from './facebook';
-import { getCustomer, findCustomersByFacebookId, createCustomer } from './dynamodb';
+import {
+    getCustomer,
+    findCustomersByFacebookId,
+    createCustomer,
+    updateCustomer
+} from './dynamodb';
 import { noAuthorizationHeaderError } from './errors';
 
 const api = new ApiBuilder();
@@ -38,11 +43,18 @@ api.post('/v1/customers', req =>
 });
 
 // Get customer info
-api.get('/v1/customers/{customerId}', req => {
-    const customerId = req.pathParams.customerId;
-    return auth(getAccessToken(req)).then(() =>
-        getCustomer(dynamo, customerId));
-},{
+api.get('/v1/customers/{customerId}', req =>
+    auth(getAccessToken(req)).then(() =>
+        getCustomer(dynamo, req.pathParams.customerId)
+), {
+    error: { contentType: 'text/plain' }
+});
+
+// Update customer info
+api.put('/v1/customers/{customerId}', req =>
+    auth(getAccessToken(req)).then(() =>
+        updateCustomer(dynamo, req.pathParams.customerId, req.body)
+), {
     error: { contentType: 'text/plain' }
 });
 
