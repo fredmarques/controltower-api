@@ -6,6 +6,11 @@ This API is **extremely experimental** and will have constant breaking changes. 
 
 This document is a **draft**!
 
+## Patches are welcome
+
+If you are a contributor, see the [CONTRIBUTING.md][contributing] file for instructions on how
+to setup the developer environment to write your patches.
+
 ## Endpoints
 
 | endpoint | methods | requires authentication |
@@ -22,9 +27,11 @@ This document is a **draft**!
 For using endpoints that requires authentication, you must pass an
 ```Authentication``` header with the value ```Bearer your_access_token```.
 The access token for the v1 of this api is a Facebook accessToken that
-can be obtained with a [Facebook Login Popup][facebooklogin].
+can be obtained with a [Facebook Login Popup][facebooklogin] using the app ID of
+a facebook app that your API server is configured to expect (step 1.1 of the
+[Contributing Guide][contributing]).
 
-Example:
+### Example:
 ```shell
 curl --request GET \
   --url https://api.example.com/latest/v1/customers/048c37f5-17fb-4f3f-82de-8014230d3922 \
@@ -200,3 +207,4 @@ PUT ```/v1/users/{ userId }```
 
 
 [facebooklogin]: https://developers.facebook.com/docs/facebook-login/web
+[contributing]: https://github.com/calamar-io/controltower-api/blob/master/CONTRIBUTING.md
