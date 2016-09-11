@@ -1,13 +1,19 @@
 import uuid from 'node-uuid';
 import flatten from 'flat';
 import getValue from 'lodash.get';
+import { unknownCustomerIdError } from './errors';
 const customersTable = 'ct_customers';
+const botsTable = 'ct_bots';
 
 const getCustomer = (dynamo, id) => dynamo.get({
     TableName: customersTable,
     Key: { id }
-}).promise().then(data => data.Item);
-
+}).promise().then(data => {
+    if (!data.Item) {
+        throw unknownCustomerIdError;
+    }
+    return data.Item;
+});
 const findCustomersByFacebookId = (dynamo, facebookId) => dynamo.query({
     TableName: customersTable,
     IndexName: 'facebookId-index',
@@ -16,7 +22,7 @@ const findCustomersByFacebookId = (dynamo, facebookId) => dynamo.query({
 }).promise();
 
 const createCustomer = (dynamo, facebookId, name, email) => {
-    const newUser = {
+    const newCustomer = {
         id: uuid.v4(),
         facebookId,
         name,
@@ -25,9 +31,33 @@ const createCustomer = (dynamo, facebookId, name, email) => {
     };
     return dynamo.put({
         TableName: customersTable,
-        Item: newUser
-    }).promise().then(() => newUser);
+        Item: newCustomer
+    }).promise().then(() => newCustomer);
 };
+
+const registerBot = (dynamo, id, botId) => dynamo.update({
+    TableName: customersTable,
+    Key: { id },
+    UpdateExpression: 'SET bots = list_append(:botId, bots)',
+    ExpressionAttributeValues: {
+        ':botId': [botId]
+    },
+    ReturnValues: 'ALL_NEW'
+}).promise().then(data => data.Attributes);
+
+const createBot = (dynamo, customerId) => {
+    const newBot = {
+        id: uuid.v4(),
+        customerId
+    };
+    return dynamo.put({
+        TableName: botsTable,
+        Item: newBot
+    }).promise().then(() =>
+        registerBot(dynamo, customerId, newBot.id).then(() => newBot)
+    );
+};
+
 
 // generates DynamoDB's
 // UpdateExpression, ExpressionAttributeNames and ExpressionAttributeValues
@@ -79,5 +109,6 @@ export {
     getCustomer,
     findCustomersByFacebookId,
     createCustomer,
-    updateCustomer
+    updateCustomer,
+    createBot
 };

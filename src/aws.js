@@ -1,13 +1,13 @@
 import config from '../config-sample';
 import ApiBuilder from 'claudia-api-builder';
 import AWS from 'aws-sdk';
-import uuid from 'node-uuid';
 import { getFbUser } from './facebook';
 import {
     getCustomer,
     findCustomersByFacebookId,
     createCustomer,
-    updateCustomer
+    updateCustomer,
+    createBot
 } from './dynamodb';
 import { noAuthorizationHeaderError } from './errors';
 
@@ -26,11 +26,11 @@ const getAccessToken = req => {
 
 // check if the acessToken is a valid Facebook token for the correct
 // Facebook app and if so, return a Facebook user object
-const auth = token => getFbUser(FB_APP_SECRET, token);
+const auth = req => getFbUser(FB_APP_SECRET, getAccessToken(req));
 
 // Create a customer
 api.post('/v1/customers', req =>
-    auth(getAccessToken(req)).then(fbUser =>
+    auth(req).then(fbUser =>
         findCustomersByFacebookId(dynamo, fbUser.id).then(data => {
             if (data.Count > 0) {
                 return data.Items[0];
@@ -43,41 +43,32 @@ api.post('/v1/customers', req =>
 });
 
 // Get customer info
+const authAndGetCustomer = req =>
+    auth(req).then(() =>
+        getCustomer(dynamo, (req.pathParams.customerId || req.body.customerId))
+    );
+
 api.get('/v1/customers/{customerId}', req =>
-    auth(getAccessToken(req)).then(() =>
-        getCustomer(dynamo, req.pathParams.customerId)
-), {
+    authAndGetCustomer(req)
+, {
     error: { contentType: 'text/plain' }
 });
 
 // Update customer info
 api.put('/v1/customers/{customerId}', req =>
-    auth(getAccessToken(req)).then(() =>
+    auth(req).then(() =>
         updateCustomer(dynamo, req.pathParams.customerId, req.body)
 ), {
     error: { contentType: 'text/plain' }
 });
 
 // Create a bot
-api.post('/v1/bots', req => {
-    console.log('request.pathParams', JSON.stringify(req.pathParams));
-    console.log('req.body', req.body);
-
-    const customerId = req.body.customerId;
-    // TODO: check if customerId already existis in data table
-
-    const id = uuid.v4();
-    const params = {
-        TableName: 'ct_bots',
-        Item: {
-            id,
-            customerId
-        }
-    };
-    return dynamo.put(params).promise()
-        .then(() => id);
-}, {
-    success: { code: 201 }
+api.post('/v1/bots', req =>
+    authAndGetCustomer(req).then(customer =>
+        createBot(dynamo, customer.id)
+), {
+    success: { code: 201 },
+    error: { contentType: 'text/plain' }
 });
 
 // Get bot config
