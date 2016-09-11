@@ -5,12 +5,15 @@ import { unknownCustomerIdError } from './errors';
 const customersTable = 'ct_customers';
 const botsTable = 'ct_bots';
 
-const getCustomer = (dynamo, id) => dynamo.get({
+const getCustomer = (dynamo, id, facebookId) => dynamo.get({
     TableName: customersTable,
     Key: { id }
 }).promise().then(data => {
     if (!data.Item) {
         throw unknownCustomerIdError;
+    }
+    if (data.Item.facebookId !== facebookId) {
+        throw fbUserDeniedAccessError(facebookId, id);
     }
     return data.Item;
 });

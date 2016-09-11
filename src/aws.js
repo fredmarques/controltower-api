@@ -44,8 +44,12 @@ api.post('/v1/customers', req =>
 
 // Get customer info
 const authAndGetCustomer = req =>
-    auth(req).then(() =>
-        getCustomer(dynamo, (req.pathParams.customerId || req.body.customerId))
+    auth(req).then(fbUser =>
+        getCustomer(
+            dynamo,
+            (req.pathParams.customerId || req.body.customerId),
+            fbUser.id
+        )
     );
 
 api.get('/v1/customers/{customerId}', req =>
