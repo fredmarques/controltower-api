@@ -96,7 +96,7 @@ PUT ```/v1/customers/{ customerId }```
 ##### curl example
 ```shell
 curl --request PUT \
-  --url https://api.example.com/latest/v1/customers/87df2a3e-7a68-43aa-bba2-f6fe6d08f089 \
+  --url https://api.example.com/v1/customers/87df2a3e-7a68-43aa-bba2-f6fe6d08f089 \
   --header 'authorization: Bearer EAA...ZD' \
   --header 'content-type: application/json' \
   --data '{
@@ -129,8 +129,9 @@ POST ```/v1/bots```
 - 200 (application/json)
 ```json
 {
-	"id": "068b1795-6bf3-408b-a35a-e19760594407",
-	"customerId": "87df2a3e-7a68-43aa-bba2-f6fe6d08f089"
+	"customerId": "87df2a3e-7a68-43aa-bba2-f6fe6d08f089",
+	"id": "4853d957-1cde-4b37-b5d1-cdf14512114b",
+	"users": []
 }
 ```
 
@@ -138,38 +139,23 @@ POST ```/v1/bots```
 ##### Request
 GET ```/v1/bots/{ botId }```
 
-TBD
+##### Query string parameters
+- customerId (optional)
 
-##### Response
-- 200
-
+##### curl example
+```shell
+curl --request GET \
+  --url 'https://api.example.com/v1/bots/4cd94422-7598-4405-946a-1861ce9a4168?customerId=87df2a3e-7a68-43aa-bba2-f6fe6d08f089' \
+  --header 'authorization: Bearer EAA...DZD' \
+  --header 'content-type: application/json'
 ```
+##### Successful Response
+- 200 (application/json)
+
+```json
 {
-    "id": "0263dfd3-5cf7-4575-acce-5b30edf2784c",
-    "customerId": "17d771f6-9471-44fa-878b-fc6b31cac48a",
-    "facebook": {
-        "pages": [
-            {
-                "id": "721...18",
-                "accessToken": "EAA...ZD"
-            }
-        ],
-        "app": {
-            secret: "681e...70"
-        }
-    },
-    "vtex": {
-        "api": {
-            "token": "ANX...MM",
-            "key": "vtex...SU",
-            "accountName": "foo",
-            "environment": "vtex...com.br"
-        }
-        "app": {
-            "key": "your.email@example.com",
-            "token": "F...91"
-        }
-    }
+	"id": "4cd94422-7598-4405-946a-1861ce9a4168",
+	"customerId": "87df2a3e-7a68-43aa-bba2-f6fe6d08f089"
 }
 ```
 
@@ -178,7 +164,31 @@ TBD
 ##### Request
 PUT ```/v1/bots/{ botId }```
 
-TBD
+- body: a json containing the attributes and values to update
+
+##### curl example
+```shell
+curl --request PUT \
+  --url https://api.example.com/v1/bots/bc74d285-2fdf-4a77-990b-f412273bad5f \
+  --header 'authorization: Bearer EAA...ZD' \
+  --header 'content-type: application/json' \
+  --data '{
+	"foo": "bar",
+	"bar": "foo"
+}'
+```
+
+##### Successful Response
+- 200 (application/json)
+
+```json
+{
+	"id": "bc74d285-2fdf-4a77-990b-f412273bad5f",
+	"foo": "bar",
+	"customerId": "87df2a3e-7a68-43aa-bba2-f6fe6d08f089",
+	"bar": "foo"
+}
+```
 
 ### Users
 
@@ -190,17 +200,47 @@ user, a chat group, an IRC channel…
 ##### Request
 POST ```/v1/users```
 
-TBD
+- body: a json containing information about the chat session (facebook Id of the recipient) and the bot listening to that session (botId). Optionally you
+can also include the id of the customer that owns that bot (customerId) to speed
+things up.
+    - example body:
+    ```json
+    {
+    	"botId": "4853d957-1cde-4b37-b5d1-cdf14512114b",
+	    "customerId": "87df2a3e-7a68-43aa-bba2-f6fe6d08f089",
+	    "facebookId": "10154544223979636"
+    }
+```
 
-##### Parameters
+##### Successful Response
+- 200 (application/json)
 
-- ```botId```
+```json
+{
+	"botId": "4853d957-1cde-4b37-b5d1-cdf14512114b",
+	"id": "db00fe66-0475-4471-9bb7-b3f099bd6e97",
+	"facebookId": "10154544223979636"
+}
+```
 
 #### Get user info
 
 GET ```/v1/users/{ userId }```
 
-TBD
+##### Query string parameters
+- **botId** (required)
+- customerId (optional)
+
+##### Successful Response
+- 200 (application/json)
+
+```json
+{
+	"botId": "4853d957-1cde-4b37-b5d1-cdf14512114b",
+	"id": "050e8b79-f52b-4746-8672-c45b83582049",
+	"facebookId": "10154544223979636"
+}
+```
 
 #### Update user info
 
