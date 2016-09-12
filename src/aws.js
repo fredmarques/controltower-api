@@ -9,7 +9,8 @@ import {
     updateCustomer,
     createBot,
     getBot,
-    updateBot
+    updateBot,
+    createUser
 } from './dynamodb';
 import { noAuthorizationHeaderError, unknownCustomerIdError } from './errors';
 
@@ -30,27 +31,19 @@ const getAccessToken = req => {
 // Facebook app and if so, return a Facebook user object
 const auth = req => getFbUser(FB_APP_SECRET, getAccessToken(req));
 
-// Create a customer
-api.post('/v1/customers', req =>
-    auth(req).then(fbUser =>
-        findCustomersByFacebookId(dynamo, fbUser.id).then(customers => {
-            if (customers !== null) {
-                return customers[0];
-            }
-            return createCustomer(dynamo, fbUser.id, fbUser.name, fbUser.email);
-        })
-), {
-    success: { code: 201 },
-    error: { contentType: 'text/plain' }
-});
+const getParam = (req, paramName) => {
+    if (req.pathParams && req.pathParams[paramName]) {
+        return req.pathParams[paramName];
+    }
+    if (req.queryString && req.queryString[paramName]) {
+        return req.queryString[paramName];
+    }
+    if (req.body && req.body[paramName]) {
+        return req.body[paramName];
+    }
+    return null;
+};
 
-const getParam = (req, paramName) => (
-    req.pathParams[paramName] ||
-    req.body[paramName] ||
-    req.queryString[paramName]
-);
-
-// Get customer info
 const authAndGetCustomer = req =>
     auth(req).then(fbUser => {
         const customerId = getParam(req, 'customerId');
@@ -66,21 +59,36 @@ const authAndGetCustomer = req =>
     }
 );
 
+// Get customer
 api.get('/v1/customers/{customerId}', req =>
     authAndGetCustomer(req)
 , {
     error: { contentType: 'text/plain' }
 });
 
-// Update customer info
-api.put('/v1/customers/{customerId}', req =>
+// Get bot
+api.get('/v1/bots/{botId}', req =>
     authAndGetCustomer(req).then(customer =>
-        updateCustomer(dynamo, customer.id, req.body)
+        getBot(dynamo, customer.id, req.pathParams.botId)
 ), {
     error: { contentType: 'text/plain' }
 });
 
-// Create a bot
+// Create customer
+api.post('/v1/customers', req =>
+    auth(req).then(fbUser =>
+        findCustomersByFacebookId(dynamo, fbUser.id).then(customers => {
+            if (customers !== null) {
+                return customers[0];
+            }
+            return createCustomer(dynamo, fbUser.id, fbUser.name, fbUser.email);
+        })
+), {
+    success: { code: 201 },
+    error: { contentType: 'text/plain' }
+});
+
+// Create bot
 api.post('/v1/bots', req =>
     authAndGetCustomer(req).then(customer =>
         createBot(dynamo, customer.id)
@@ -89,15 +97,27 @@ api.post('/v1/bots', req =>
     error: { contentType: 'text/plain' }
 });
 
-// Get bot config
-api.get('/v1/bots/{botId}', req =>
+// Create user
+api.post('/v1/users', req =>
     authAndGetCustomer(req).then(customer =>
-        getBot(dynamo, customer.id, req.pathParams.botId)
+        getBot(dynamo, customer.id, getParam(req, 'botId')).then(bot =>
+            // TODO check if the facebook ID is a valid one and include the user name
+            createUser(dynamo, getParam(req, 'facebookId'), bot.id, customer.id)
+        )
+), {
+    success: { code: 201 },
+    error: { contentType: 'text/plain' }
+});
+
+// Update customer
+api.put('/v1/customers/{customerId}', req =>
+    authAndGetCustomer(req).then(customer =>
+        updateCustomer(dynamo, customer.id, req.body)
 ), {
     error: { contentType: 'text/plain' }
 });
 
-// Update bot config
+// Update bot
 api.put('/v1/bots/{botId}', req =>
     authAndGetCustomer(req).then(customer =>
         updateBot(dynamo, req.pathParams.botId, customer.id, req.body)
