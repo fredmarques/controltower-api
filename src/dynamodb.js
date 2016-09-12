@@ -1,7 +1,7 @@
 import uuid from 'node-uuid';
 import flatten from 'flat';
 import getValue from 'lodash.get';
-import { unknownCustomerIdError } from './errors';
+import { unknownCustomerIdError, fbUserDeniedAccessError } from './errors';
 const customersTable = 'ct_customers';
 const botsTable = 'ct_bots';
 
@@ -22,7 +22,12 @@ const findCustomersByFacebookId = (dynamo, facebookId) => dynamo.query({
     IndexName: 'facebookId-index',
     KeyConditionExpression: 'facebookId = :facebookId',
     ExpressionAttributeValues: { ':facebookId': facebookId }
-}).promise();
+}).promise().then(data => {
+    if (data.Count > 0) {
+        return data.Items;
+    }
+    return null;
+});
 
 const createCustomer = (dynamo, facebookId, name, email) => {
     const newCustomer = {
@@ -50,8 +55,8 @@ const registerBot = (dynamo, id, botId) => dynamo.update({
 
 const createBot = (dynamo, customerId) => {
     const newBot = {
-        id: uuid.v4(),
-        customerId
+        customerId,
+        id: uuid.v4()
     };
     return dynamo.put({
         TableName: botsTable,
@@ -60,6 +65,14 @@ const createBot = (dynamo, customerId) => {
         registerBot(dynamo, customerId, newBot.id).then(() => newBot)
     );
 };
+
+const getBot = (dynamo, customerId, id) => dynamo.get({
+    TableName: botsTable,
+    Key: {
+        customerId,
+        id
+    }
+}).promise().then(data => data.Item);
 
 
 // generates DynamoDB's
@@ -113,5 +126,6 @@ export {
     findCustomersByFacebookId,
     createCustomer,
     updateCustomer,
-    createBot
+    createBot,
+    getBot
 };

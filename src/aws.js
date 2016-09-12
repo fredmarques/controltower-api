@@ -7,9 +7,10 @@ import {
     findCustomersByFacebookId,
     createCustomer,
     updateCustomer,
-    createBot
+    createBot,
+    getBot
 } from './dynamodb';
-import { noAuthorizationHeaderError } from './errors';
+import { noAuthorizationHeaderError, unknownCustomerIdError } from './errors';
 
 const api = new ApiBuilder();
 const dynamo = new AWS.DynamoDB.DocumentClient();
@@ -31,9 +32,9 @@ const auth = req => getFbUser(FB_APP_SECRET, getAccessToken(req));
 // Create a customer
 api.post('/v1/customers', req =>
     auth(req).then(fbUser =>
-        findCustomersByFacebookId(dynamo, fbUser.id).then(data => {
-            if (data.Count > 0) {
-                return data.Items[0];
+        findCustomersByFacebookId(dynamo, fbUser.id).then(customers => {
+            if (customers !== null) {
+                return customers[0];
             }
             return createCustomer(dynamo, fbUser.id, fbUser.name, fbUser.email);
         })
@@ -42,15 +43,27 @@ api.post('/v1/customers', req =>
     error: { contentType: 'text/plain' }
 });
 
+const getParam = (req, paramName) => (
+    req.pathParams[paramName] ||
+    req.body[paramName] ||
+    req.queryString[paramName]
+);
+
 // Get customer info
 const authAndGetCustomer = req =>
-    auth(req).then(fbUser =>
-        getCustomer(
-            dynamo,
-            (req.pathParams.customerId || req.body.customerId),
-            fbUser.id
-        )
-    );
+    auth(req).then(fbUser => {
+        const customerId = getParam(req, 'customerId');
+        if (customerId) {
+            return getCustomer(dynamo, customerId, fbUser.id);
+        }
+        return findCustomersByFacebookId(dynamo, fbUser.id).then(customers => {
+            if (customers === null) {
+                throw unknownCustomerIdError;
+            }
+            return getCustomer(dynamo, customers[0].id, fbUser.id);
+        });
+    }
+);
 
 api.get('/v1/customers/{customerId}', req =>
     authAndGetCustomer(req)
@@ -76,11 +89,11 @@ api.post('/v1/bots', req =>
 });
 
 // Get bot config
-api.get('/v1/bots/{botId}', req => {
-    console.log('request.pathParams', JSON.stringify(req.pathParams));
-    console.log('req.body', req.body);
-    const botId = req.pathParams.botId;
-    return botId;
+api.get('/v1/bots/{botId}', req =>
+    authAndGetCustomer(req).then(customer =>
+        getBot(dynamo, customer.id, req.pathParams.botId)
+), {
+    error: { contentType: 'text/plain' }
 });
 
 export default api;
