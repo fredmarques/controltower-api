@@ -91,23 +91,37 @@ const expressionParameters = update => {
     // all attributes that needs to be set
     const expressionParts = keyListDot.map((key, index) =>
         `${key} = :${keyListUnder[index]}`);
-    // the UpdateExpression string replacing reserved words with # placeholders
-    const expression = reservedWords.reduce((prev, word) =>
-        prev.replace(`${word} =`, `#${word} =`),
-        `SET ${expressionParts.join(', ')}`
-    );
-    // ExpressionAttributeValues object that describes the placeholders
-    const attributeNames = reservedWords.reduce((prev, word) =>
-        Object.assign(prev, { [`#${word}`]: word }),
-        {}
-    );
+    // the UpdateExpression string without # placeholders
+    const expression = `SET ${expressionParts.join(', ')}`;
     // ExpressionAttributeValues
     const values = keyListDot.reduce((prev, key, index) =>
         Object.assign(prev, { [`:${keyListUnder[index]}`]: getValue(update, key) }),
         {}
     );
+    // replace reserved words with # placeholders
+    let replacedWords = [];
+    let finalExpression = expression;
+    reservedWords.forEach(word => {
+        const needle = `([ \.])${word}([ \.])`;
+        const re = new RegExp(needle, 'g');
+        if (re.test(finalExpression)) {
+            finalExpression = finalExpression.replace(re, `$1#${word}$2`);
+            replacedWords = replacedWords.concat(word);
+        }
+    });
+    if (replacedWords.length === 0) {
+        return {
+            UpdateExpression: finalExpression,
+            ExpressionAttributeValues: values
+        };
+    }
+    // ExpressionAttributeValues object that describes the placeholders
+    const attributeNames = replacedWords.reduce((prev, word) =>
+        Object.assign(prev, { [`#${word}`]: word }),
+        {}
+    );
     return {
-        UpdateExpression: expression,
+        UpdateExpression: finalExpression,
         ExpressionAttributeNames: attributeNames,
         ExpressionAttributeValues: values
     };
@@ -120,6 +134,22 @@ const updateCustomer = (dynamo, id, newValues) => dynamo.update({
     ...expressionParameters(newValues)
 }).promise().then(data => data.Attributes);
 
+const noop = () => null;
+const updateBot = (dynamo, paramId, paramCustomerId, newValues) => {
+    const { id, customerId, ...others } = newValues;
+    noop(id, customerId);
+    return dynamo.update({
+    // return {
+        TableName: botsTable,
+        Key: {
+            customerId: paramCustomerId,
+            id: paramId
+        },
+        ReturnValues: 'ALL_NEW',
+        ...expressionParameters({ ...others })
+    }).promise().then(data => data.Attributes);
+    // };
+};
 
 export {
     getCustomer,
@@ -127,5 +157,6 @@ export {
     createCustomer,
     updateCustomer,
     createBot,
-    getBot
+    getBot,
+    updateBot
 };
