@@ -100,6 +100,14 @@ const getBot = (dynamo, customerId, id) => dynamo.get({
     }
 }).promise().then(data => data.Item);
 
+const getUser = (dynamo, botId, id) => dynamo.get({
+    TableName: USERS_TABLE,
+    Key: {
+        botId,
+        id
+    }
+}).promise().then(data => data.Item);
+
 // Query
 
 const findCustomersByFacebookId = (dynamo, facebookId) => dynamo.query({
@@ -200,5 +208,6 @@ export {
     createBot,
     getBot,
     updateBot,
-    createUser
+    createUser,
+    getUser
 };

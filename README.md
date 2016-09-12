@@ -223,12 +223,24 @@ things up.
 }
 ```
 
-
 #### Get user info
 
 GET ```/v1/users/{ userId }```
 
-TBD
+##### Query string parameters
+- **botId** (required)
+- customerId (optional)
+
+##### Successful Response
+- 200 (application/json)
+
+```json
+{
+	"botId": "4853d957-1cde-4b37-b5d1-cdf14512114b",
+	"id": "050e8b79-f52b-4746-8672-c45b83582049",
+	"facebookId": "10154544223979636"
+}
+```
 
 #### Update user info
 
