@@ -130,7 +130,8 @@ POST ```/v1/bots```
 ```json
 {
 	"customerId": "87df2a3e-7a68-43aa-bba2-f6fe6d08f089",
-	"id": "4cd94422-7598-4405-946a-1861ce9a4168"
+	"id": "4853d957-1cde-4b37-b5d1-cdf14512114b",
+	"users": []
 }
 ```
 
@@ -199,11 +200,29 @@ user, a chat group, an IRC channel…
 ##### Request
 POST ```/v1/users```
 
-TBD
+- body: a json containing information about the chat session (facebook Id of the recipient) and the bot listening to that session (botId). Optionally you
+can also include the id of the customer that owns that bot (customerId) to speed
+things up.
+    - example body:
+    ```json
+    {
+    	"botId": "4853d957-1cde-4b37-b5d1-cdf14512114b",
+	    "customerId": "87df2a3e-7a68-43aa-bba2-f6fe6d08f089",
+	    "facebookId": "10154544223979636"
+    }
+```
 
-##### Parameters
+##### Successful Response
+- 200 (application/json)
 
-- ```botId```
+```json
+{
+	"botId": "4853d957-1cde-4b37-b5d1-cdf14512114b",
+	"id": "db00fe66-0475-4471-9bb7-b3f099bd6e97",
+	"facebookId": "10154544223979636"
+}
+```
+
 
 #### Get user info
 

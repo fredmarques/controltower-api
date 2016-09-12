@@ -9,7 +9,8 @@ import {
     updateCustomer,
     createBot,
     getBot,
-    updateBot
+    updateBot,
+    createUser
 } from './dynamodb';
 import { noAuthorizationHeaderError, unknownCustomerIdError } from './errors';
 
@@ -30,11 +31,18 @@ const getAccessToken = req => {
 // Facebook app and if so, return a Facebook user object
 const auth = req => getFbUser(FB_APP_SECRET, getAccessToken(req));
 
-const getParam = (req, paramName) => (
-    req.pathParams[paramName] ||
-    req.body[paramName] ||
-    req.queryString[paramName]
-);
+const getParam = (req, paramName) => {
+    if (req.pathParams && req.pathParams[paramName]) {
+        return req.pathParams[paramName];
+    }
+    if (req.queryString && req.queryString[paramName]) {
+        return req.queryString[paramName];
+    }
+    if (req.body && req.body[paramName]) {
+        return req.body[paramName];
+    }
+    return null;
+};
 
 const authAndGetCustomer = req =>
     auth(req).then(fbUser => {
@@ -84,6 +92,18 @@ api.post('/v1/customers', req =>
 api.post('/v1/bots', req =>
     authAndGetCustomer(req).then(customer =>
         createBot(dynamo, customer.id)
+), {
+    success: { code: 201 },
+    error: { contentType: 'text/plain' }
+});
+
+// Create user
+api.post('/v1/users', req =>
+    authAndGetCustomer(req).then(customer =>
+        getBot(dynamo, customer.id, getParam(req, 'botId')).then(bot =>
+            // TODO check if the facebook ID is a valid one and include the user name
+            createUser(dynamo, getParam(req, 'facebookId'), bot.id, customer.id)
+        )
 ), {
     success: { code: 201 },
     error: { contentType: 'text/plain' }

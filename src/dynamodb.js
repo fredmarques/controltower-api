@@ -2,11 +2,12 @@ import uuid from 'node-uuid';
 import flatten from 'flat';
 import getValue from 'lodash.get';
 import { unknownCustomerIdError, fbUserDeniedAccessError } from './errors';
-const customersTable = 'ct_customers';
-const botsTable = 'ct_bots';
+const CUSTOMERS_TABLE = 'ct_customers';
+const BOTS_TABLE = 'ct_bots';
+const USERS_TABLE = 'ct_users';
 
 const getCustomer = (dynamo, id, facebookId) => dynamo.get({
-    TableName: customersTable,
+    TableName: CUSTOMERS_TABLE,
     Key: { id }
 }).promise().then(data => {
     if (!data.Item) {
@@ -18,7 +19,7 @@ const getCustomer = (dynamo, id, facebookId) => dynamo.get({
     return data.Item;
 });
 const findCustomersByFacebookId = (dynamo, facebookId) => dynamo.query({
-    TableName: customersTable,
+    TableName: CUSTOMERS_TABLE,
     IndexName: 'facebookId-index',
     KeyConditionExpression: 'facebookId = :facebookId',
     ExpressionAttributeValues: { ':facebookId': facebookId }
@@ -38,13 +39,13 @@ const createCustomer = (dynamo, facebookId, name, email) => {
         bots: []
     };
     return dynamo.put({
-        TableName: customersTable,
+        TableName: CUSTOMERS_TABLE,
         Item: newCustomer
     }).promise().then(() => newCustomer);
 };
 
 const registerBot = (dynamo, id, botId) => dynamo.update({
-    TableName: customersTable,
+    TableName: CUSTOMERS_TABLE,
     Key: { id },
     UpdateExpression: 'SET bots = list_append(:botId, bots)',
     ExpressionAttributeValues: {
@@ -56,10 +57,11 @@ const registerBot = (dynamo, id, botId) => dynamo.update({
 const createBot = (dynamo, customerId) => {
     const newBot = {
         customerId,
-        id: uuid.v4()
+        id: uuid.v4(),
+        users: []
     };
     return dynamo.put({
-        TableName: botsTable,
+        TableName: BOTS_TABLE,
         Item: newBot
     }).promise().then(() =>
         registerBot(dynamo, customerId, newBot.id).then(() => newBot)
@@ -67,13 +69,43 @@ const createBot = (dynamo, customerId) => {
 };
 
 const getBot = (dynamo, customerId, id) => dynamo.get({
-    TableName: botsTable,
+    TableName: BOTS_TABLE,
     Key: {
         customerId,
         id
     }
 }).promise().then(data => data.Item);
 
+const registerUser = (dynamo, id, customerId, userId) => dynamo.update({
+    TableName: BOTS_TABLE,
+    Key: {
+        customerId,
+        id
+    },
+    UpdateExpression: 'SET #users = list_append(:userId, #users)',
+    ExpressionAttributeNames: {
+        '#users': 'users'
+    },
+    ExpressionAttributeValues: {
+        ':userId': [userId]
+    },
+    ReturnValues: 'ALL_NEW'
+}).promise().then(data => data.Attributes);
+
+const createUser = (dynamo, facebookId, botId, customerId) => {
+    const newUser = {
+        botId,
+        id: uuid.v4(),
+        facebookId
+    };
+    console.log('createUser', botId, customerId, newUser);
+    return dynamo.put({
+        TableName: USERS_TABLE,
+        Item: newUser
+    }).promise().then(() =>
+        registerUser(dynamo, botId, customerId, newUser.id).then(() => newUser)
+    );
+};
 
 // generates DynamoDB's
 // UpdateExpression, ExpressionAttributeNames and ExpressionAttributeValues
@@ -128,7 +160,7 @@ const expressionParameters = update => {
 };
 
 const updateCustomer = (dynamo, id, newValues) => dynamo.update({
-    TableName: customersTable,
+    TableName: CUSTOMERS_TABLE,
     Key: { id },
     ReturnValues: 'ALL_NEW',
     ...expressionParameters(newValues)
@@ -140,7 +172,7 @@ const updateBot = (dynamo, paramId, paramCustomerId, newValues) => {
     noop(id, customerId);
     return dynamo.update({
     // return {
-        TableName: botsTable,
+        TableName: BOTS_TABLE,
         Key: {
             customerId: paramCustomerId,
             id: paramId
@@ -158,5 +190,6 @@ export {
     updateCustomer,
     createBot,
     getBot,
-    updateBot
+    updateBot,
+    createUser
 };
