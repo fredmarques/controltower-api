@@ -11,9 +11,14 @@ import {
     getBot,
     updateBot,
     createUser,
-    getUser
+    getUser,
+    updateUser
 } from './dynamodb';
-import { noAuthorizationHeaderError, unknownCustomerIdError } from './errors';
+import {
+    noAuthorizationHeaderError,
+    unknownCustomerIdError,
+    unknownBotIdError
+} from './errors';
 
 const api = new ApiBuilder();
 const dynamo = new AWS.DynamoDB.DocumentClient();
@@ -132,6 +137,19 @@ api.put('/v1/customers/{customerId}', req =>
 api.put('/v1/bots/{botId}', req =>
     authAndGetCustomer(req).then(customer =>
         updateBot(dynamo, req.pathParams.botId, customer.id, req.body)
+), {
+    error: { contentType: 'text/plain' }
+});
+
+// Update user
+api.put('/v1/users/{userId}', req =>
+    authAndGetCustomer(req).then(customer =>
+        getBot(dynamo, customer.id, getParam(req, 'botId')).then(bot => {
+            if (!bot || !bot.id) {
+                throw unknownBotIdError;
+            }
+            return updateUser(dynamo, req.pathParams.userId, bot.id, req.body);
+        })
 ), {
     error: { contentType: 'text/plain' }
 });

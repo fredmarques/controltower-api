@@ -18,7 +18,7 @@
     "build:aws": "npm run build:npm",
     "prebuild:aws": "babel-node tasks/awsPreBuild.js",
     "postbuild:aws": "babel-node tasks/awsPostBuild.js && tree dist/aws",
-    "create:aws": "claudia create --region us-east-1 --source ./dist/aws/ --api-module aws --policies ./policies/*.json",
+    "create:aws": "claudia create --region us-east-1 --source ./dist/aws/ --api-module aws --policies ./policies/*.json --timeout 4",
     "destroy:aws": "claudia destroy --source ./dist/aws/ --api-module aws",
     "postdestroy:aws": "rm -f ./dist/aws/claudia.json",
     "publish:aws": "claudia update --source ./dist/aws/",

@@ -188,7 +188,6 @@ const updateBot = (dynamo, paramId, paramCustomerId, newValues) => {
     const { id, customerId, ...others } = newValues;
     noop(id, customerId);
     return dynamo.update({
-    // return {
         TableName: BOTS_TABLE,
         Key: {
             customerId: paramCustomerId,
@@ -197,7 +196,20 @@ const updateBot = (dynamo, paramId, paramCustomerId, newValues) => {
         ReturnValues: 'ALL_NEW',
         ...expressionParameters({ ...others })
     }).promise().then(data => data.Attributes);
-    // };
+};
+
+const updateUser = (dynamo, paramId, paramBotId, newValues) => {
+    const { id, botId, ...others } = newValues;
+    noop(id, botId);
+    return dynamo.update({
+        TableName: USERS_TABLE,
+        Key: {
+            botId: paramBotId,
+            id: paramId
+        },
+        ReturnValues: 'ALL_NEW',
+        ...expressionParameters({ ...others })
+    }).promise().then(data => data.Attributes);
 };
 
 export {
@@ -209,5 +221,6 @@ export {
     getBot,
     updateBot,
     createUser,
-    getUser
+    getUser,
+    updateUser
 };
