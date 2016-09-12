@@ -91,7 +91,31 @@ GET ```/v1/customers/{ customerId }```
 ##### Request
 PUT ```/v1/customers/{ customerId }```
 
-TBD
+- body: a json containing the attributes and values to update
+
+##### curl example
+```shell
+curl --request PUT \
+  --url https://api.example.com/latest/v1/customers/87df2a3e-7a68-43aa-bba2-f6fe6d08f089 \
+  --header 'authorization: Bearer EAA...ZD' \
+  --header 'content-type: application/json' \
+  --data '{
+	"name": "James Morgan McGill",
+	"email": "james@example.com"
+}'
+```
+
+##### Successful Response
+- 200 (application/json)
+```json
+{
+	"id": "048c37f5-17fb-4f3f-82de-8014230d3922",
+	"email": "james@example.com",
+	"name": "James Morgan McGill",
+	"facebookId": "10154544223979636",
+	"bots": []
+}
+```
 
 ### Bots
 
