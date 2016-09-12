@@ -8,7 +8,8 @@ import {
     createCustomer,
     updateCustomer,
     createBot,
-    getBot
+    getBot,
+    updateBot
 } from './dynamodb';
 import { noAuthorizationHeaderError, unknownCustomerIdError } from './errors';
 
@@ -73,8 +74,8 @@ api.get('/v1/customers/{customerId}', req =>
 
 // Update customer info
 api.put('/v1/customers/{customerId}', req =>
-    auth(req).then(() =>
-        updateCustomer(dynamo, req.pathParams.customerId, req.body)
+    authAndGetCustomer(req).then(customer =>
+        updateCustomer(dynamo, customer.id, req.body)
 ), {
     error: { contentType: 'text/plain' }
 });
@@ -92,6 +93,14 @@ api.post('/v1/bots', req =>
 api.get('/v1/bots/{botId}', req =>
     authAndGetCustomer(req).then(customer =>
         getBot(dynamo, customer.id, req.pathParams.botId)
+), {
+    error: { contentType: 'text/plain' }
+});
+
+// Update bot config
+api.put('/v1/bots/{botId}', req =>
+    authAndGetCustomer(req).then(customer =>
+        updateBot(dynamo, req.pathParams.botId, customer.id, req.body)
 ), {
     error: { contentType: 'text/plain' }
 });

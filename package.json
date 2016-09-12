@@ -30,6 +30,7 @@
     "plugins": [
       "add-module-exports",
       "transform-es2015-modules-commonjs",
+      "transform-es2015-destructuring",
       "transform-object-rest-spread"
     ]
   },
@@ -37,8 +38,9 @@
     "extends": "calamar"
   },
   "devDependencies": {
-    "babel-cli": "^6.11.4",
+    "babel-cli": "^6.14.0",
     "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-plugin-transform-es2015-destructuring": "^6.9.0",
     "babel-plugin-transform-es2015-modules-commonjs": "^6.11.5",
     "babel-plugin-transform-object-rest-spread": "^6.8.0",
     "claudia": "^1.8.0",
