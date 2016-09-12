@@ -10,9 +10,15 @@ import {
     createBot,
     getBot,
     updateBot,
-    createUser
+    createUser,
+    getUser,
+    updateUser
 } from './dynamodb';
-import { noAuthorizationHeaderError, unknownCustomerIdError } from './errors';
+import {
+    noAuthorizationHeaderError,
+    unknownCustomerIdError,
+    unknownBotIdError
+} from './errors';
 
 const api = new ApiBuilder();
 const dynamo = new AWS.DynamoDB.DocumentClient();
@@ -74,6 +80,16 @@ api.get('/v1/bots/{botId}', req =>
     error: { contentType: 'text/plain' }
 });
 
+// Get user
+api.get('/v1/users/{userId}', req =>
+    authAndGetCustomer(req).then(customer =>
+        getBot(dynamo, customer.id, getParam(req, 'botId')).then(bot =>
+            getUser(dynamo, bot.id, req.pathParams.userId)
+        )
+), {
+    error: { contentType: 'text/plain' }
+});
+
 // Create customer
 api.post('/v1/customers', req =>
     auth(req).then(fbUser =>
@@ -121,6 +137,19 @@ api.put('/v1/customers/{customerId}', req =>
 api.put('/v1/bots/{botId}', req =>
     authAndGetCustomer(req).then(customer =>
         updateBot(dynamo, req.pathParams.botId, customer.id, req.body)
+), {
+    error: { contentType: 'text/plain' }
+});
+
+// Update user
+api.put('/v1/users/{userId}', req =>
+    authAndGetCustomer(req).then(customer =>
+        getBot(dynamo, customer.id, getParam(req, 'botId')).then(bot => {
+            if (!bot || !bot.id) {
+                throw unknownBotIdError;
+            }
+            return updateUser(dynamo, req.pathParams.userId, bot.id, req.body);
+        })
 ), {
     error: { contentType: 'text/plain' }
 });

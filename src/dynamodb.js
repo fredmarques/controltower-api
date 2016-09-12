@@ -6,29 +6,7 @@ const CUSTOMERS_TABLE = 'ct_customers';
 const BOTS_TABLE = 'ct_bots';
 const USERS_TABLE = 'ct_users';
 
-const getCustomer = (dynamo, id, facebookId) => dynamo.get({
-    TableName: CUSTOMERS_TABLE,
-    Key: { id }
-}).promise().then(data => {
-    if (!data.Item) {
-        throw unknownCustomerIdError;
-    }
-    if (data.Item.facebookId !== facebookId) {
-        throw fbUserDeniedAccessError(facebookId, id);
-    }
-    return data.Item;
-});
-const findCustomersByFacebookId = (dynamo, facebookId) => dynamo.query({
-    TableName: CUSTOMERS_TABLE,
-    IndexName: 'facebookId-index',
-    KeyConditionExpression: 'facebookId = :facebookId',
-    ExpressionAttributeValues: { ':facebookId': facebookId }
-}).promise().then(data => {
-    if (data.Count > 0) {
-        return data.Items;
-    }
-    return null;
-});
+// Create (customer, bot, user)
 
 const createCustomer = (dynamo, facebookId, name, email) => {
     const newCustomer = {
@@ -68,14 +46,6 @@ const createBot = (dynamo, customerId) => {
     );
 };
 
-const getBot = (dynamo, customerId, id) => dynamo.get({
-    TableName: BOTS_TABLE,
-    Key: {
-        customerId,
-        id
-    }
-}).promise().then(data => data.Item);
-
 const registerUser = (dynamo, id, customerId, userId) => dynamo.update({
     TableName: BOTS_TABLE,
     Key: {
@@ -106,6 +76,53 @@ const createUser = (dynamo, facebookId, botId, customerId) => {
         registerUser(dynamo, botId, customerId, newUser.id).then(() => newUser)
     );
 };
+
+// Get (customer, bot, user)
+
+const getCustomer = (dynamo, id, facebookId) => dynamo.get({
+    TableName: CUSTOMERS_TABLE,
+    Key: { id }
+}).promise().then(data => {
+    if (!data.Item) {
+        throw unknownCustomerIdError;
+    }
+    if (data.Item.facebookId !== facebookId) {
+        throw fbUserDeniedAccessError(facebookId, id);
+    }
+    return data.Item;
+});
+
+const getBot = (dynamo, customerId, id) => dynamo.get({
+    TableName: BOTS_TABLE,
+    Key: {
+        customerId,
+        id
+    }
+}).promise().then(data => data.Item);
+
+const getUser = (dynamo, botId, id) => dynamo.get({
+    TableName: USERS_TABLE,
+    Key: {
+        botId,
+        id
+    }
+}).promise().then(data => data.Item);
+
+// Query
+
+const findCustomersByFacebookId = (dynamo, facebookId) => dynamo.query({
+    TableName: CUSTOMERS_TABLE,
+    IndexName: 'facebookId-index',
+    KeyConditionExpression: 'facebookId = :facebookId',
+    ExpressionAttributeValues: { ':facebookId': facebookId }
+}).promise().then(data => {
+    if (data.Count > 0) {
+        return data.Items;
+    }
+    return null;
+});
+
+// Update
 
 // generates DynamoDB's
 // UpdateExpression, ExpressionAttributeNames and ExpressionAttributeValues
@@ -171,7 +188,6 @@ const updateBot = (dynamo, paramId, paramCustomerId, newValues) => {
     const { id, customerId, ...others } = newValues;
     noop(id, customerId);
     return dynamo.update({
-    // return {
         TableName: BOTS_TABLE,
         Key: {
             customerId: paramCustomerId,
@@ -180,7 +196,20 @@ const updateBot = (dynamo, paramId, paramCustomerId, newValues) => {
         ReturnValues: 'ALL_NEW',
         ...expressionParameters({ ...others })
     }).promise().then(data => data.Attributes);
-    // };
+};
+
+const updateUser = (dynamo, paramId, paramBotId, newValues) => {
+    const { id, botId, ...others } = newValues;
+    noop(id, botId);
+    return dynamo.update({
+        TableName: USERS_TABLE,
+        Key: {
+            botId: paramBotId,
+            id: paramId
+        },
+        ReturnValues: 'ALL_NEW',
+        ...expressionParameters({ ...others })
+    }).promise().then(data => data.Attributes);
 };
 
 export {
@@ -191,5 +220,7 @@ export {
     createBot,
     getBot,
     updateBot,
-    createUser
+    createUser,
+    getUser,
+    updateUser
 };
