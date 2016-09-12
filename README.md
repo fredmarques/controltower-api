@@ -125,11 +125,18 @@ Programs configured by system [customers](customers), that can listen/reply to [
 ##### Request
 POST ```/v1/bots```
 
-TBD
+##### Successful Response
+- 200 (application/json)
+```json
+{
+	"id": "068b1795-6bf3-408b-a35a-e19760594407",
+	"customerId": "87df2a3e-7a68-43aa-bba2-f6fe6d08f089"
+}
+```
 
 #### Get bot config
 ##### Request
-POST ```/v1/bots/{ botId }```
+GET ```/v1/bots/{ botId }```
 
 TBD
 
@@ -208,6 +215,14 @@ TBD
 {
 	"error": {
 		"message": "No authorization header"
+	}
+}
+```
+- 500 (text/plain)
+```text
+{
+	"error": {
+		"message": "Invalid customerId"
 	}
 }
 ```
