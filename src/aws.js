@@ -97,7 +97,16 @@ api.post('/v1/customers', req =>
             if (customers !== null) {
                 return customers[0];
             }
-            return createCustomer(dynamo, fbUser.id, fbUser.name, fbUser.email);
+            return createCustomer(
+                dynamo, fbUser.id, fbUser.name, fbUser.email
+            ).then(customer =>
+                createBot(dynamo, customer.id).then(bot =>
+                    ({
+                        ...customer,
+                        bots: [bot.id]
+                    })
+                )
+            );
         })
 ), {
     success: { code: 201 },
