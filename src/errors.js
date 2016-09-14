@@ -5,6 +5,7 @@ const formatError = message => JSON.stringify({
 });
 const noAuthorizationHeaderError = formatError('No authorization header');
 const unknownCustomerIdError = formatError('Invalid customerId');
+const unknownBotIdError = formatError('Invalid botId');
 const fbUserDeniedAccessError = (facebookId, customerId) => formatError(
     `The facebook user ${facebookId} is not allowed to acces data of customer ${customerId}`
 );
@@ -12,5 +13,6 @@ const fbUserDeniedAccessError = (facebookId, customerId) => formatError(
 export {
     noAuthorizationHeaderError,
     unknownCustomerIdError,
-    fbUserDeniedAccessError
+    fbUserDeniedAccessError,
+    unknownBotIdError
 };
