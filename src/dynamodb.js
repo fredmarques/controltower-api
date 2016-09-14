@@ -32,11 +32,12 @@ const registerBot = (dynamo, id, botId) => dynamo.update({
     ReturnValues: 'ALL_NEW'
 }).promise().then(data => data.Attributes);
 
-const createBot = (dynamo, customerId) => {
+const createBot = (dynamo, customerId, botSchema) => {
     const newBot = {
         customerId,
         id: uuid.v4(),
-        users: []
+        users: [],
+        ...botSchema
     };
     return dynamo.put({
         TableName: BOTS_TABLE,
