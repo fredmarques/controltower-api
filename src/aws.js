@@ -25,6 +25,12 @@ const dynamo = new AWS.DynamoDB.DocumentClient();
 
 const FB_APP_SECRET = config.facebook.appSecret;
 
+const ecommerceBot = {
+    type: 'ecommerce',
+    facebook: {},
+    vtex: {}
+};
+
 // extract acess token from request header
 const getAccessToken = req => {
     if (!req.normalizedHeaders.authorization) {
@@ -100,7 +106,7 @@ api.post('/v1/customers', req =>
             return createCustomer(
                 dynamo, fbUser.id, fbUser.name, fbUser.email
             ).then(customer =>
-                createBot(dynamo, customer.id).then(bot =>
+                createBot(dynamo, customer.id, ecommerceBot).then(bot =>
                     ({
                         ...customer,
                         bots: [bot.id]
@@ -116,7 +122,7 @@ api.post('/v1/customers', req =>
 // Create bot
 api.post('/v1/bots', req =>
     authAndGetCustomer(req).then(customer =>
-        createBot(dynamo, customer.id)
+        createBot(dynamo, customer.id, ecommerceBot)
 ), {
     success: { code: 201 },
     error: { contentType: 'text/plain' }
