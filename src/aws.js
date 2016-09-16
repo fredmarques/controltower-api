@@ -13,7 +13,8 @@ import {
     createUser,
     getUser,
     updateUser,
-    usersWithMutedBot
+    usersWithMutedBot,
+    batchUpdateUser
 } from './dynamodb';
 import {
     noAuthorizationHeaderError,
@@ -144,7 +145,8 @@ api.post('/v1/users', req =>
     authAndGetCustomer(req).then(customer =>
         getBot(dynamo, customer.id, getParam(req, 'botId')).then(bot =>
             // TODO check if the facebook ID is a valid one and include the user name
-            createUser(dynamo, getParam(req, 'facebookId'), bot.id, customer.id)
+            createUser(dynamo, getParam(req, 'facebookId'),
+                bot.id, customer.id, getParam(req, 'name'))
         )
 ), {
     success: { code: 201 },
@@ -167,7 +169,20 @@ api.put('/v1/bots/{botId}', req =>
     error: { contentType: 'text/plain' }
 });
 
-// Update user
+// Update batch update the same attributes on multiple users
+api.put('/v1/users', req =>
+    authAndGetCustomer(req).then(customer =>
+        getBot(dynamo, customer.id, getParam(req, 'botId')).then(bot => {
+            if (!bot || !bot.id) {
+                throw unknownBotIdError;
+            }
+            return batchUpdateUser(dynamo, req.body.ids, bot.id, req.body.update);
+        })
+), {
+    error: { contentType: 'text/plain' }
+});
+
+// Update a single user
 api.put('/v1/users/{userId}', req =>
     authAndGetCustomer(req).then(customer =>
         getBot(dynamo, customer.id, getParam(req, 'botId')).then(bot => {

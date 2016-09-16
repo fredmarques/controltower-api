@@ -63,11 +63,12 @@ const registerUser = (dynamo, id, customerId, userId) => dynamo.update({
     ReturnValues: 'ALL_NEW'
 }).promise().then(data => data.Attributes);
 
-const createUser = (dynamo, facebookId, botId, customerId) => {
+const createUser = (dynamo, facebookId, botId, customerId, name) => {
     const newUser = {
         botId,
         id: uuid.v4(),
-        facebookId
+        facebookId,
+        name
     };
     console.log('createUser', botId, customerId, newUser);
     return dynamo.put({
@@ -223,6 +224,16 @@ const updateUser = (dynamo, paramId, paramBotId, newValues) => {
     }).promise().then(data => data.Attributes);
 };
 
+// updates some attributes with the same new values for multiple users (given list of ids)
+const batchUpdateUser = (dynamo, ids, botId, newValues) => {
+    console.log('batchUpdateUser', );
+    let calls = [];
+    ids.forEach(id => {
+        calls = calls.concat([updateUser(dynamo, id, botId, newValues)]);
+    });
+    return Promise.all(calls);
+};
+
 export {
     getCustomer,
     findCustomersByFacebookId,
@@ -234,5 +245,6 @@ export {
     createUser,
     getUser,
     updateUser,
-    usersWithMutedBot
+    usersWithMutedBot,
+    batchUpdateUser
 };
