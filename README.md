@@ -19,7 +19,7 @@ to setup the developer environment to write your patches.
 | ```/v1/customers/{ customerId }``` | [GET](#get-customer-info), [PUT](#update-customer-info) | yes |
 | ```/v1/bots``` | [POST](#create-a-bot) | yes |
 | ```/v1/bots/{ botId }``` | [GET](#get-bot-config), [PUT](#update-bot-config) | yes |
-| ```/v1/users``` | [POST](#create-a-user) | yes |
+| ```/v1/users``` | [POST](#create-a-user), [GET](#query-users-with-muted-bot) | yes |
 | ```/v1/users/{ userId }``` | [GET](#get-user-info), [PUT](#update-user-info) | yes |
 
 ## Authenticated requests
@@ -149,6 +149,7 @@ curl --request GET \
   --header 'authorization: Bearer EAA...DZD' \
   --header 'content-type: application/json'
 ```
+
 ##### Successful Response
 - 200 (application/json)
 
@@ -242,11 +243,67 @@ GET ```/v1/users/{ userId }```
 }
 ```
 
+#### Query users with muted bot
+
+
+GET ```/v1/users```
+
+##### Query string parameters
+- botId
+- customerId
+
+##### curl example
+```shell
+curl --request GET \
+  --url 'https://api.example.com/v1/users?botId=00950d32-2059-42c7-8f91-b30515fc7f15&customerId=91a6f56d-870a-41ec-bdb2-22740aaa9a4f' \
+  --header 'authorization: Bearer EAA...DZD' \
+  --header 'content-type: application/json'
+
+```
+
+##### Successful Response
+- 200 (application/json)
+
+```json
+[
+	{
+		"botId": "00950d32-2059-42c7-8f91-b30515fc7f15",
+		"id": "52f42726-9f8d-4728-bbf2-7229bc753769",
+		"botStatus": "muted",
+		"facebookId": "10154544223979636"
+	}
+]
+```
+
 #### Update user info
 
 PUT ```/v1/users/{ userId }```
 
-TBD
+- body: a json containing the attributes and values to update
+
+##### curl example
+```shell
+curl --request PUT \
+  --url https://api.example.com/v1/users/52f42726-9f8d-4728-bbf2-7229bc753769 \
+  --header 'authorization: Bearer EAA...ZD' \
+  --header 'content-type: application/json' \
+  --data '{
+	"botStatus": "active",
+	"botId": "00950d32-2059-42c7-8f91-b30515fc7f15"
+}'
+```
+
+##### Successful Response
+- 200 (application/json)
+
+```json
+{
+	"botId": "00950d32-2059-42c7-8f91-b30515fc7f15",
+	"id": "52f42726-9f8d-4728-bbf2-7229bc753769",
+	"facebookId": "10154544223979636",
+	"botStatus": "active"
+}
+```
 
 ### Examples of error responses
 

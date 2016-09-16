@@ -12,7 +12,8 @@ import {
     updateBot,
     createUser,
     getUser,
-    updateUser
+    updateUser,
+    usersWithMutedBot
 } from './dynamodb';
 import {
     noAuthorizationHeaderError,
@@ -82,6 +83,16 @@ api.get('/v1/customers/{customerId}', req =>
 api.get('/v1/bots/{botId}', req =>
     authAndGetCustomer(req).then(customer =>
         getBot(dynamo, customer.id, req.pathParams.botId)
+), {
+    error: { contentType: 'text/plain' }
+});
+
+// Get users with muted bot
+api.get('/v1/users', req =>
+    authAndGetCustomer(req).then(customer =>
+        getBot(dynamo, customer.id, getParam(req, 'botId')).then(bot =>
+            usersWithMutedBot(dynamo, bot.id, getParam(req, 'botStatus'))
+        )
 ), {
     error: { contentType: 'text/plain' }
 });

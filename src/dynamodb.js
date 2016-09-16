@@ -123,6 +123,16 @@ const findCustomersByFacebookId = (dynamo, facebookId) => dynamo.query({
     return null;
 });
 
+const usersWithMutedBot = (dynamo, botId, botStatus) => dynamo.query({
+    TableName: USERS_TABLE,
+    IndexName: 'botStatus-botId-index',
+    KeyConditionExpression: 'botId = :botId and botStatus = :botStatus',
+    ExpressionAttributeValues: {
+        ':botId': botId,
+        ':botStatus': botStatus || 'muted'
+    }
+}).promise().then(data => data.Items);
+
 // Update
 
 // generates DynamoDB's
@@ -223,5 +233,6 @@ export {
     updateBot,
     createUser,
     getUser,
-    updateUser
+    updateUser,
+    usersWithMutedBot
 };
