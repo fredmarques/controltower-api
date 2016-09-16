@@ -19,7 +19,7 @@ to setup the developer environment to write your patches.
 | ```/v1/customers/{ customerId }``` | [GET](#get-customer-info), [PUT](#update-customer-info) | yes |
 | ```/v1/bots``` | [POST](#create-a-bot) | yes |
 | ```/v1/bots/{ botId }``` | [GET](#get-bot-config), [PUT](#update-bot-config) | yes |
-| ```/v1/users``` | [POST](#create-a-user), [GET](#query-users-with-muted-bot) | yes |
+| ```/v1/users``` | [POST](#create-a-user), [GET](#query-users-with-muted-bot), [PUT](#unmute-bot-for-multiple-users) | yes |
 | ```/v1/users/{ userId }``` | [GET](#get-user-info), [PUT](#update-user-info) | yes |
 
 ## Authenticated requests
@@ -275,21 +275,50 @@ curl --request GET \
 ]
 ```
 
-#### Update user info
+##### Unmute bot for multiple users
 
-PUT ```/v1/users/{ userId }```
-
-- body: a json containing the attributes and values to update
+PUT ```/v1/users```
 
 ##### curl example
 ```shell
 curl --request PUT \
-  --url https://api.example.com/v1/users/52f42726-9f8d-4728-bbf2-7229bc753769 \
+  --url https://api.example.com/v1/users \
+  --header 'authorization: Bearer EAA...DZD' \
+  --header 'content-type: application/json' \
+  --data '{
+	"ids": [
+		"52f42726-9f8d-4728-bbf2-7229bc753769",
+		"52f42726-9f8d-4728-bbf2-7229bc753769"
+	],
+	"botId": "00950d32-2059-42c7-8f91-b30515fc7f15",
+	"update": {
+		"botStatus": "muted"
+	}
+}'
+```
+
+#### Update user info
+
+PUT ```/v1/users/{ userId }```
+
+- body: a json containing the list of ```ids``` of users to change, the ```botId```
+and an ```update``` attribute containing the attributes to update on all users.
+
+##### curl example
+```shell
+curl --request PUT \
+  --url https://api.example.com/latest/v1/users \
   --header 'authorization: Bearer EAA...ZD' \
   --header 'content-type: application/json' \
   --data '{
-	"botStatus": "active",
-	"botId": "00950d32-2059-42c7-8f91-b30515fc7f15"
+	"ids": [
+		"52f42726-9f8d-4728-bbf2-7229bc753769",
+		"a17f26f6-85b4-4502-b1aa-6fdae8b6af81"
+	],
+	"botId": "00950d32-2059-42c7-8f91-b30515fc7f15",
+	"update": {
+		"botStatus": "muted"
+	}
 }'
 ```
 
