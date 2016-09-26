@@ -226,7 +226,6 @@ const updateUser = (dynamo, paramId, paramBotId, newValues) => {
 
 // updates some attributes with the same new values for multiple users (given list of ids)
 const batchUpdateUser = (dynamo, ids, botId, newValues) => {
-    console.log('batchUpdateUser', );
     let calls = [];
     ids.forEach(id => {
         calls = calls.concat([updateUser(dynamo, id, botId, newValues)]);
