@@ -5,6 +5,7 @@
   "license": "AGPL-3.0",
   "scripts-info": {
     "build:npm": "Builds the transpiled npm package under dist/npm",
+    "publish:aws": "Update the deployed api on AWS",
     "ppp": "Increases the version patch number, push to github and publish to npm",
     "mpp": "Increases the version minor number, push to github and publish to npm"
   },
