@@ -36,7 +36,6 @@ const createBot = (dynamo, customerId, botSchema) => {
     const newBot = {
         customerId,
         id: uuid.v4(),
-        users: [],
         ...botSchema
     };
     return dynamo.put({
@@ -46,22 +45,6 @@ const createBot = (dynamo, customerId, botSchema) => {
         registerBot(dynamo, customerId, newBot.id).then(() => newBot)
     );
 };
-
-const registerUser = (dynamo, id, customerId, userId) => dynamo.update({
-    TableName: BOTS_TABLE,
-    Key: {
-        customerId,
-        id
-    },
-    UpdateExpression: 'SET #users = list_append(:userId, #users)',
-    ExpressionAttributeNames: {
-        '#users': 'users'
-    },
-    ExpressionAttributeValues: {
-        ':userId': [userId]
-    },
-    ReturnValues: 'ALL_NEW'
-}).promise().then(data => data.Attributes);
 
 const createUser = (dynamo, facebookId, botId, customerId, name) => {
     const newUser = {
@@ -74,9 +57,7 @@ const createUser = (dynamo, facebookId, botId, customerId, name) => {
     return dynamo.put({
         TableName: USERS_TABLE,
         Item: newUser
-    }).promise().then(() =>
-        registerUser(dynamo, botId, customerId, newUser.id).then(() => newUser)
-    );
+    }).promise().then(() => newUser);
 };
 
 // Get (customer, bot, user)
@@ -226,7 +207,6 @@ const updateUser = (dynamo, paramId, paramBotId, newValues) => {
 
 // updates some attributes with the same new values for multiple users (given list of ids)
 const batchUpdateUser = (dynamo, ids, botId, newValues) => {
-    console.log('batchUpdateUser', );
     let calls = [];
     ids.forEach(id => {
         calls = calls.concat([updateUser(dynamo, id, botId, newValues)]);
