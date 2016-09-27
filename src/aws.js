@@ -30,7 +30,8 @@ const FB_APP_SECRET = config.facebook.appSecret;
 const ecommerceBot = {
     type: 'ecommerce',
     facebook: {},
-    vtex: {}
+    vtex: {},
+    replies: '{}'
 };
 
 // extract acess token from request header
