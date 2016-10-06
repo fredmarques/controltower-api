@@ -180,8 +180,12 @@ const updateCustomer = (dynamo, id, newValues) => dynamo.update({
 
 const noop = () => null;
 const updateBot = (dynamo, paramId, paramCustomerId, newValues) => {
-    const { id, customerId, ...others } = newValues;
-    noop(id, customerId);
+    const { id, customerId, inviteCode, ...others } = newValues;
+    noop(id, customerId, inviteCode);
+    let params = others;
+    if (inviteCode === 'new') {
+        params = Object.assign(params, { inviteCode: shortid.generate() });
+    }
     return dynamo.update({
         TableName: BOTS_TABLE,
         Key: {
@@ -189,7 +193,7 @@ const updateBot = (dynamo, paramId, paramCustomerId, newValues) => {
             id: paramId
         },
         ReturnValues: 'ALL_NEW',
-        ...expressionParameters({ ...others })
+        ...expressionParameters({ ...params })
     }).promise().then(data => data.Attributes);
 };
 

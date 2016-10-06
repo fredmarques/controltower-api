@@ -191,6 +191,11 @@ curl --request PUT \
 }
 ```
 
+##### Special case: Generate new bot config invite code
+
+If in the body of the request you send a ```"inviteCode"``` of value ```"new"```
+then the existing inviteCode will be invalidated and a new one will be generated.
+
 ### Users
 
 An user is a recipient that a [bot](#bot) can chat to. Examples: a messenger
