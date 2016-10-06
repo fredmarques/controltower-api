@@ -74,6 +74,7 @@
     "flat": "^2.0.1",
     "lodash.get": "^4.4.2",
     "node-fetch": "^1.6.0",
-    "node-uuid": "^1.4.7"
+    "node-uuid": "^1.4.7",
+    "shortid": "^2.2.6"
   }
 }

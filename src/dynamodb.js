@@ -1,4 +1,5 @@
 import uuid from 'node-uuid';
+import shortid from 'shortid';
 import flatten from 'flat';
 import getValue from 'lodash.get';
 import { unknownCustomerIdError, fbUserDeniedAccessError } from './errors';
@@ -36,6 +37,7 @@ const createBot = (dynamo, customerId, botSchema) => {
     const newBot = {
         customerId,
         id: uuid.v4(),
+        inviteCode: shortid.generate(),
         ...botSchema
     };
     return dynamo.put({
