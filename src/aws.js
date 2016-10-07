@@ -10,6 +10,7 @@ import {
     createBot,
     getBot,
     updateBot,
+    registerBot,
     createUser,
     getUser,
     updateUser,
@@ -163,10 +164,32 @@ api.put('/v1/customers/{customerId}', req =>
 });
 
 // Update bot
-api.put('/v1/bots/{botId}', req =>
-    authAndGetCustomer(req).then(customer =>
+const addAdminCustomerToBot = req => auth(req).then(fbUser =>
+    findCustomersByFacebookId(dynamo, fbUser.id).then(customers => {
+        if (customers === null) {
+            throw unknownCustomerIdError;
+        }
+        return getCustomer(dynamo, customers[0].id, fbUser.id).then(customer =>
+            updateBot(dynamo, req.pathParams.botId, customer.id, req.body).then(bot => {
+                const botIsRegistered = customer.bots.indexOf(bot.id) !== -1;
+                if (botIsRegistered) {
+                    return customer;
+                }
+                return registerBot(dynamo, customer.id, bot.id);
+            })
+        );
+    })
+);
+api.put('/v1/bots/{botId}', req => {
+    // special case user accepting an admin invitation to manage a bot
+    if (req.body.admins) {
+        return addAdminCustomerToBot(req);
+    }
+    // regular update a bot request
+    return authAndGetCustomer(req).then(customer =>
         updateBot(dynamo, req.pathParams.botId, customer.id, req.body)
-), {
+    );
+}, {
     error: { contentType: 'text/plain' }
 });
 

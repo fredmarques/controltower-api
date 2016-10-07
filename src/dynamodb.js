@@ -2,7 +2,12 @@ import uuid from 'node-uuid';
 import shortid from 'shortid';
 import flatten from 'flat';
 import getValue from 'lodash.get';
-import { unknownCustomerIdError, fbUserDeniedAccessError } from './errors';
+import {
+    unknownCustomerIdError,
+    fbUserDeniedAccessError,
+    invalidIviteCodeError,
+    customerNotAdminError
+} from './errors';
 const CUSTOMERS_TABLE = 'ct_customers';
 const BOTS_TABLE = 'ct_bots';
 const USERS_TABLE = 'ct_users';
@@ -38,6 +43,7 @@ const createBot = (dynamo, customerId, botSchema) => {
         customerId,
         id: uuid.v4(),
         inviteCode: shortid.generate(),
+        admins: [customerId],
         ...botSchema
     };
     return dynamo.put({
@@ -55,7 +61,6 @@ const createUser = (dynamo, facebookId, botId, customerId, name) => {
         facebookId,
         name
     };
-    console.log('createUser', botId, customerId, newUser);
     return dynamo.put({
         TableName: USERS_TABLE,
         Item: newUser
@@ -179,22 +184,75 @@ const updateCustomer = (dynamo, id, newValues) => dynamo.update({
 }).promise().then(data => data.Attributes);
 
 const noop = () => null;
+const addAdminToBot = (dynamo, botOwnerId, botId, adminCustomerId) => {
+    const dynamoUpdate = {
+        TableName: BOTS_TABLE,
+        Key: {
+            customerId: botOwnerId,
+            id: botId
+        },
+        UpdateExpression: 'SET admins = list_append(:adminId, admins)',
+        ExpressionAttributeValues: {
+            ':adminId': [adminCustomerId]
+        },
+        ReturnValues: 'ALL_NEW'
+    };
+    // add paramCustomerId to the list
+    return dynamo.update(dynamoUpdate).promise().then(data => data.Attributes);
+};
+
+const dynamoUpdateBotObject = (customerId, id, params) => ({
+    TableName: BOTS_TABLE,
+    Key: {
+        customerId,
+        id
+    },
+    ReturnValues: 'ALL_NEW',
+    ...expressionParameters({ ...params })
+});
+
 const updateBot = (dynamo, paramId, paramCustomerId, newValues) => {
-    const { id, customerId, inviteCode, ...others } = newValues;
+    const { id, customerId, inviteCode, admins, ownerId, ...others } = newValues;
     noop(id, customerId, inviteCode);
     let params = others;
+
+    // special case, add an admin
+    if (admins === 'me' && customerId) {
+        return getBot(dynamo, customerId, paramId).then(bot => {
+            if (inviteCode !== bot.inviteCode) {
+                throw invalidIviteCodeError;
+            }
+            const isAdminAlready = bot.admins.indexOf(paramCustomerId) !== -1;
+            if (isAdminAlready) {
+                return bot;
+            }
+            return addAdminToBot(dynamo, customerId, paramId, paramCustomerId);
+        });
+    }
+
+    // special case, regenerate invite code
     if (inviteCode === 'new') {
         params = Object.assign(params, { inviteCode: shortid.generate() });
     }
-    return dynamo.update({
-        TableName: BOTS_TABLE,
-        Key: {
-            customerId: paramCustomerId,
-            id: paramId
-        },
-        ReturnValues: 'ALL_NEW',
-        ...expressionParameters({ ...params })
-    }).promise().then(data => data.Attributes);
+
+    // special case, user making the request is not the bot ownerId
+    if (ownerId) {
+        // return `owner was passed ${ownerId} ${paramId}`;
+        return getBot(dynamo, ownerId, paramId).then(bot => {
+            const customerIsAdmin = bot.admins.indexOf(paramCustomerId) !== -1;
+            if (!customerIsAdmin) {
+                throw customerNotAdminError;
+            }
+            return dynamo.update(
+                dynamoUpdateBotObject(ownerId, paramId, params)
+            ).promise().then(data => data.Attributes);
+        });
+    }
+
+    // regular bot update
+    return dynamo.update(
+        dynamoUpdateBotObject(paramCustomerId, paramId, params),
+    ).promise().then(data => data.Attributes);
 };
 
 const updateUser = (dynamo, paramId, paramBotId, newValues) => {
@@ -228,6 +286,7 @@ export {
     createBot,
     getBot,
     updateBot,
+    registerBot,
     createUser,
     getUser,
     updateUser,
