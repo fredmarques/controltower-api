@@ -191,10 +191,32 @@ curl --request PUT \
 }
 ```
 
-##### Special case: Generate new bot config invite code
+##### Special cases
+###### Generate new bot config invite code
 
-If in the body of the request you send a ```"inviteCode"``` of value ```"new"```
+If in the body of the request you send an ```"inviteCode"``` of value ```"new"```
 then the existing inviteCode will be invalidated and a new one will be generated.
+
+###### Add a new customer to the list of bot admins
+
+If in the body of the request you send an ```"admins"``` key with value ```"me"```,
+and an ```"inviteCode"``` key with a valid inviteCode value, and a ```customerId```
+with the id of the bot owner the customer making the request will be added to
+the admins access list of that bot.
+
+Example body:
+
+```json
+{
+	"admins": "me",
+	"inviteCode": "ry7ECzB0",
+	"customerId": "735aa084-c5bb-4808-a8a2-ffe6d83f0c0d"
+}
+```
+
+###### Remove a customer from the list of bot admins
+
+TBD
 
 ### Users
 

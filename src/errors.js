@@ -9,10 +9,12 @@ const unknownBotIdError = formatError('Invalid botId');
 const fbUserDeniedAccessError = (facebookId, customerId) => formatError(
     `The facebook user ${facebookId} is not allowed to acces data of customer ${customerId}`
 );
+const invalidIviteCodeError = formatError('Invalid invite code');
 
 export {
     noAuthorizationHeaderError,
     unknownCustomerIdError,
     fbUserDeniedAccessError,
-    unknownBotIdError
+    unknownBotIdError,
+    invalidIviteCodeError
 };

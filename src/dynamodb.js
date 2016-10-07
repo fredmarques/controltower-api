@@ -2,7 +2,11 @@ import uuid from 'node-uuid';
 import shortid from 'shortid';
 import flatten from 'flat';
 import getValue from 'lodash.get';
-import { unknownCustomerIdError, fbUserDeniedAccessError } from './errors';
+import {
+    unknownCustomerIdError,
+    fbUserDeniedAccessError,
+    invalidIviteCodeError
+} from './errors';
 const CUSTOMERS_TABLE = 'ct_customers';
 const BOTS_TABLE = 'ct_bots';
 const USERS_TABLE = 'ct_users';
@@ -38,6 +42,7 @@ const createBot = (dynamo, customerId, botSchema) => {
         customerId,
         id: uuid.v4(),
         inviteCode: shortid.generate(),
+        admins: [customerId],
         ...botSchema
     };
     return dynamo.put({
@@ -179,13 +184,47 @@ const updateCustomer = (dynamo, id, newValues) => dynamo.update({
 }).promise().then(data => data.Attributes);
 
 const noop = () => null;
+const addAdminToBot = (dynamo, botOwnerId, botId, adminCustomerId) => {
+    const dynamoUpdate = {
+        TableName: BOTS_TABLE,
+        Key: {
+            customerId: botOwnerId,
+            id: botId
+        },
+        UpdateExpression: 'SET admins = list_append(:adminId, admins)',
+        ExpressionAttributeValues: {
+            ':adminId': [adminCustomerId]
+        },
+        ReturnValues: 'ALL_NEW'
+    };
+    // add paramCustomerId to the list
+    return dynamo.update(dynamoUpdate).promise().then(data => data.Attributes);
+};
 const updateBot = (dynamo, paramId, paramCustomerId, newValues) => {
-    const { id, customerId, inviteCode, ...others } = newValues;
+    const { id, customerId, inviteCode, admins, ...others } = newValues;
     noop(id, customerId, inviteCode);
     let params = others;
+
+    // special case, add an admin
+    if (admins === 'me' && customerId) {
+        return getBot(dynamo, customerId, paramId).then(bot => {
+            if (inviteCode !== bot.inviteCode) {
+                throw invalidIviteCodeError;
+            }
+            const isAdminAlready = bot.admins.indexOf(paramCustomerId) !== -1;
+            if (isAdminAlready) {
+                return bot;
+            }
+            return addAdminToBot(dynamo, customerId, paramId, paramCustomerId);
+        });
+    }
+
+    // special case, regenerate invite code
     if (inviteCode === 'new') {
         params = Object.assign(params, { inviteCode: shortid.generate() });
     }
+
+    // regular bot update
     return dynamo.update({
         TableName: BOTS_TABLE,
         Key: {
@@ -228,6 +267,7 @@ export {
     createBot,
     getBot,
     updateBot,
+    registerBot,
     createUser,
     getUser,
     updateUser,
