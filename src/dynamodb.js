@@ -5,7 +5,8 @@ import getValue from 'lodash.get';
 import {
     unknownCustomerIdError,
     fbUserDeniedAccessError,
-    invalidIviteCodeError
+    invalidIviteCodeError,
+    customerNotAdminError
 } from './errors';
 const CUSTOMERS_TABLE = 'ct_customers';
 const BOTS_TABLE = 'ct_bots';
@@ -60,7 +61,6 @@ const createUser = (dynamo, facebookId, botId, customerId, name) => {
         facebookId,
         name
     };
-    console.log('createUser', botId, customerId, newUser);
     return dynamo.put({
         TableName: USERS_TABLE,
         Item: newUser
@@ -200,8 +200,19 @@ const addAdminToBot = (dynamo, botOwnerId, botId, adminCustomerId) => {
     // add paramCustomerId to the list
     return dynamo.update(dynamoUpdate).promise().then(data => data.Attributes);
 };
+
+const dynamoUpdateBotObject = (customerId, id, params) => ({
+    TableName: BOTS_TABLE,
+    Key: {
+        customerId,
+        id
+    },
+    ReturnValues: 'ALL_NEW',
+    ...expressionParameters({ ...params })
+});
+
 const updateBot = (dynamo, paramId, paramCustomerId, newValues) => {
-    const { id, customerId, inviteCode, admins, ...others } = newValues;
+    const { id, customerId, inviteCode, admins, ownerId, ...others } = newValues;
     noop(id, customerId, inviteCode);
     let params = others;
 
@@ -224,16 +235,24 @@ const updateBot = (dynamo, paramId, paramCustomerId, newValues) => {
         params = Object.assign(params, { inviteCode: shortid.generate() });
     }
 
+    // special case, user making the request is not the bot ownerId
+    if (ownerId) {
+        // return `owner was passed ${ownerId} ${paramId}`;
+        return getBot(dynamo, ownerId, paramId).then(bot => {
+            const customerIsAdmin = bot.admins.indexOf(paramCustomerId) !== -1;
+            if (!customerIsAdmin) {
+                throw customerNotAdminError;
+            }
+            return dynamo.update(
+                dynamoUpdateBotObject(ownerId, paramId, params)
+            ).promise().then(data => data.Attributes);
+        });
+    }
+
     // regular bot update
-    return dynamo.update({
-        TableName: BOTS_TABLE,
-        Key: {
-            customerId: paramCustomerId,
-            id: paramId
-        },
-        ReturnValues: 'ALL_NEW',
-        ...expressionParameters({ ...params })
-    }).promise().then(data => data.Attributes);
+    return dynamo.update(
+        dynamoUpdateBotObject(paramCustomerId, paramId, params),
+    ).promise().then(data => data.Attributes);
 };
 
 const updateUser = (dynamo, paramId, paramBotId, newValues) => {
