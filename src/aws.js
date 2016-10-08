@@ -94,7 +94,7 @@ api.get('/v1/bots/{botId}', req =>
 api.get('/v1/users', req =>
     authAndGetCustomer(req).then(customer =>
         getBot(dynamo, customer.id, getParam(req, 'botId')).then(bot =>
-            usersWithMutedBot(dynamo, bot.id, getParam(req, 'botStatus'))
+            usersWithMutedBot(dynamo, bot.id, customer.id, getParam(req, 'botStatus'))
         )
 ), {
     error: { contentType: 'text/plain' }

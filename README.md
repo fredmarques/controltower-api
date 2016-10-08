@@ -277,12 +277,11 @@ GET ```/v1/users```
 
 ##### Query string parameters
 - botId
-- customerId
 
 ##### curl example
 ```shell
 curl --request GET \
-  --url 'https://api.example.com/v1/users?botId=00950d32-2059-42c7-8f91-b30515fc7f15&customerId=91a6f56d-870a-41ec-bdb2-22740aaa9a4f' \
+  --url 'https://api.example.com/v1/users?botId=00950d32-2059-42c7-8f91-b30515fc7f15' \
   --header 'authorization: Bearer EAA...DZD' \
   --header 'content-type: application/json'
 
