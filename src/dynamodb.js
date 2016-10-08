@@ -83,6 +83,10 @@ const getCustomer = (dynamo, id, facebookId) => dynamo.get({
     return data.Item;
 });
 
+const isCustomerAdmin = (bot, customerId) => {
+    const botAdmins = bot.admins || [bot.customerId];
+    return botAdmins.indexOf(customerId) !== -1;
+};
 const getBotAsAdmin = (dynamo, botId, adminId) => {
     const dynamoParams = {
         TableName: BOTS_TABLE,
@@ -93,7 +97,7 @@ const getBotAsAdmin = (dynamo, botId, adminId) => {
     return dynamo.query(dynamoParams).promise().then(results => {
         if (results.Count > 0) {
             const bot = results.Items[0];
-            const customerIsAdmin = bot.admins.indexOf(adminId) !== -1;
+            const customerIsAdmin = isCustomerAdmin(bot, adminId);
             if (customerIsAdmin) {
                 return bot;
             }
@@ -259,7 +263,7 @@ const updateBot = (dynamo, paramId, paramCustomerId, newValues) => {
             if (inviteCode !== bot.inviteCode) {
                 throw invalidIviteCodeError;
             }
-            const isAdminAlready = bot.admins.indexOf(paramCustomerId) !== -1;
+            const isAdminAlready = isCustomerAdmin(bot, paramCustomerId);
             if (isAdminAlready) {
                 return bot;
             }
@@ -276,7 +280,7 @@ const updateBot = (dynamo, paramId, paramCustomerId, newValues) => {
     if (ownerId) {
         // return `owner was passed ${ownerId} ${paramId}`;
         return getBot(dynamo, ownerId, paramId).then(bot => {
-            const customerIsAdmin = bot.admins.indexOf(paramCustomerId) !== -1;
+            const customerIsAdmin = isCustomerAdmin(bot, paramCustomerId);
             if (!customerIsAdmin) {
                 throw customerNotAdminError;
             }
