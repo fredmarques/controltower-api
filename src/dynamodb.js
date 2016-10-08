@@ -6,7 +6,8 @@ import {
     unknownCustomerIdError,
     fbUserDeniedAccessError,
     invalidIviteCodeError,
-    customerNotAdminError
+    customerNotAdminError,
+    unknownBotIdError
 } from './errors';
 const CUSTOMERS_TABLE = 'ct_customers';
 const BOTS_TABLE = 'ct_bots';
@@ -82,13 +83,43 @@ const getCustomer = (dynamo, id, facebookId) => dynamo.get({
     return data.Item;
 });
 
-const getBot = (dynamo, customerId, id) => dynamo.get({
-    TableName: BOTS_TABLE,
-    Key: {
-        customerId,
-        id
-    }
-}).promise().then(data => data.Item);
+const getBotAsAdmin = (dynamo, botId, adminId) => {
+    const dynamoParams = {
+        TableName: BOTS_TABLE,
+        IndexName: 'id-index',
+        KeyConditionExpression: 'id = :botId',
+        ExpressionAttributeValues: { ':botId': botId }
+    };
+    return dynamo.query(dynamoParams).promise().then(results => {
+        if (results.Count > 0) {
+            const bot = results.Items[0];
+            const customerIsAdmin = bot.admins.indexOf(adminId) !== -1;
+            if (customerIsAdmin) {
+                return bot;
+            }
+            throw customerNotAdminError;
+        }
+        return results;
+    });
+};
+
+const getBot = (dynamo, customerId, id) => {
+    const dynamodb = dynamo;
+    return dynamodb.get({
+        TableName: BOTS_TABLE,
+        Key: {
+            customerId,
+            id
+        }
+    }).promise().then(data => {
+        // the result is empty probably because the customer is not the owner
+        // of that bot, check if she is an admin at least
+        if (!data.Item) {
+            return getBotAsAdmin(dynamodb, id, customerId);
+        }
+        return data.Item;
+    });
+};
 
 const getUser = (dynamo, botId, id) => dynamo.get({
     TableName: USERS_TABLE,
@@ -112,15 +143,21 @@ const findCustomersByFacebookId = (dynamo, facebookId) => dynamo.query({
     return null;
 });
 
-const usersWithMutedBot = (dynamo, botId, botStatus) => dynamo.query({
-    TableName: USERS_TABLE,
-    IndexName: 'botStatus-botId-index',
-    KeyConditionExpression: 'botId = :botId and botStatus = :botStatus',
-    ExpressionAttributeValues: {
-        ':botId': botId,
-        ':botStatus': botStatus || 'muted'
-    }
-}).promise().then(data => data.Items);
+const usersWithMutedBot = (dynamo, botId, adminId, botStatus) =>
+    getBotAsAdmin(dynamo, botId, adminId).then(bot => {
+        if (!bot) {
+            throw unknownBotIdError;
+        }
+        return dynamo.query({
+            TableName: USERS_TABLE,
+            IndexName: 'botStatus-botId-index',
+            KeyConditionExpression: 'botId = :botId and botStatus = :botStatus',
+            ExpressionAttributeValues: {
+                ':botId': botId,
+                ':botStatus': botStatus || 'muted'
+            }
+        }).promise().then(data => data.Items);
+    });
 
 // Update
 
