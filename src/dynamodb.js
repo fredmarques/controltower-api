@@ -242,15 +242,19 @@ const addAdminToBot = (dynamo, botOwnerId, botId, adminCustomerId) => {
     return dynamo.update(dynamoUpdate).promise().then(data => data.Attributes);
 };
 
-const dynamoUpdateBotObject = (customerId, id, params) => ({
-    TableName: BOTS_TABLE,
-    Key: {
-        customerId,
-        id
-    },
-    ReturnValues: 'ALL_NEW',
-    ...expressionParameters({ ...params })
-});
+const dynamoUpdateBotObject = (customerId, id, params) => {
+    const { botId, ...other } = params;
+    noop(botId);
+    return ({
+        TableName: BOTS_TABLE,
+        Key: {
+            customerId,
+            id
+        },
+        ReturnValues: 'ALL_NEW',
+        ...expressionParameters({ ...other })
+    });
+};
 
 const updateBot = (dynamo, paramId, paramCustomerId, newValues) => {
     const { id, customerId, inviteCode, admins, ownerId, ...others } = newValues;
