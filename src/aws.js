@@ -1,6 +1,7 @@
 import config from '../config-sample';
 import ApiBuilder from 'claudia-api-builder';
 import AWS from 'aws-sdk';
+import { createSpell } from './sage';
 import { getFbUser } from './facebook';
 import {
     getCustomer,
@@ -32,6 +33,13 @@ const ecommerceBot = {
     type: 'ecommerce',
     facebook: {},
     vtex: {},
+    replies: '{}'
+};
+
+const faqBot = {
+    type: 'faq',
+    facebook: {},
+    sage: {},
     replies: '{}'
 };
 
@@ -115,16 +123,22 @@ api.post('/v1/customers', req =>
     auth(req).then(fbUser =>
         findCustomersByFacebookId(dynamo, fbUser.id).then(customers => {
             if (customers !== null) {
+                console.log('Returning customer');
                 return customers[0];
             }
             return createCustomer(
                 dynamo, fbUser.id, fbUser.name, fbUser.email
             ).then(customer =>
-                createBot(dynamo, customer.id, ecommerceBot).then(bot =>
-                    ({
-                        ...customer,
-                        bots: [bot.id]
-                    })
+                createSpell(
+                    fbUser.name, 'Magically created spell for a new customer'
+                    ).then(spell => {
+                        const magicalBot = { ...faqBot, sage: { spellId: spell } };
+                        return createBot(dynamo, customer.id, magicalBot).then(bot =>
+                        ({
+                            ...customer,
+                            bots: [bot.id]
+                        })
+                    ); }
                 )
             );
         })
@@ -134,10 +148,12 @@ api.post('/v1/customers', req =>
 });
 
 // Create bot
-api.post('/v1/bots', req =>
-    authAndGetCustomer(req).then(customer =>
-        createBot(dynamo, customer.id, ecommerceBot)
-), {
+api.post('/v1/bots', req => {
+    const botType = getParam(req, 'botType');
+    const schema = (botType === 'faq') ? faqBot : ecommerceBot;
+    return authAndGetCustomer(req).then(customer =>
+        createBot(dynamo, customer.id, schema)
+); }, {
     success: { code: 201 },
     error: { contentType: 'text/plain' }
 });

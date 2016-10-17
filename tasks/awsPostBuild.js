@@ -5,7 +5,8 @@ const filesField = `  "files": [
     "aws.js",
     "dynamodb.js",
     "errors.js",
-    "facebook.js"
+    "facebook.js",
+    "sage.js"
 ],`;
 
 exec('node_modules/.bin/babel --out-file dist/aws/config.js config.js');
@@ -15,3 +16,4 @@ cp('../npm/package.json', '.');
 sed('-i', /^{/, `{${filesField}`, 'package.json');
 
 sed('-i', '../config-sample', './config', 'aws.js');
+sed('-i', '../config-sample', './config', 'sage.js');
