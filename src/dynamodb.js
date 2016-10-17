@@ -2,7 +2,13 @@ import uuid from 'node-uuid';
 import shortid from 'shortid';
 import flatten from 'flat';
 import getValue from 'lodash.get';
-import { unknownCustomerIdError, fbUserDeniedAccessError } from './errors';
+import {
+    unknownCustomerIdError,
+    fbUserDeniedAccessError,
+    invalidIviteCodeError,
+    customerNotAdminError,
+    unknownBotIdError
+} from './errors';
 const CUSTOMERS_TABLE = 'ct_customers';
 const BOTS_TABLE = 'ct_bots';
 const USERS_TABLE = 'ct_users';
@@ -38,6 +44,7 @@ const createBot = (dynamo, customerId, botSchema) => {
         customerId,
         id: uuid.v4(),
         inviteCode: shortid.generate(),
+        admins: [customerId],
         ...botSchema
     };
     return dynamo.put({
@@ -55,7 +62,6 @@ const createUser = (dynamo, facebookId, botId, customerId, name) => {
         facebookId,
         name
     };
-    console.log('createUser', botId, customerId, newUser);
     return dynamo.put({
         TableName: USERS_TABLE,
         Item: newUser
@@ -77,13 +83,47 @@ const getCustomer = (dynamo, id, facebookId) => dynamo.get({
     return data.Item;
 });
 
-const getBot = (dynamo, customerId, id) => dynamo.get({
-    TableName: BOTS_TABLE,
-    Key: {
-        customerId,
-        id
-    }
-}).promise().then(data => data.Item);
+const isCustomerAdmin = (bot, customerId) => {
+    const botAdmins = bot.admins || [bot.customerId];
+    return botAdmins.indexOf(customerId) !== -1;
+};
+const getBotAsAdmin = (dynamo, botId, adminId) => {
+    const dynamoParams = {
+        TableName: BOTS_TABLE,
+        IndexName: 'id-index',
+        KeyConditionExpression: 'id = :botId',
+        ExpressionAttributeValues: { ':botId': botId }
+    };
+    return dynamo.query(dynamoParams).promise().then(results => {
+        if (results.Count > 0) {
+            const bot = results.Items[0];
+            const customerIsAdmin = isCustomerAdmin(bot, adminId);
+            if (customerIsAdmin) {
+                return bot;
+            }
+            throw customerNotAdminError;
+        }
+        return results;
+    });
+};
+
+const getBot = (dynamo, customerId, id) => {
+    const dynamodb = dynamo;
+    return dynamodb.get({
+        TableName: BOTS_TABLE,
+        Key: {
+            customerId,
+            id
+        }
+    }).promise().then(data => {
+        // the result is empty probably because the customer is not the owner
+        // of that bot, check if she is an admin at least
+        if (!data.Item) {
+            return getBotAsAdmin(dynamodb, id, customerId);
+        }
+        return data.Item;
+    });
+};
 
 const getUser = (dynamo, botId, id) => dynamo.get({
     TableName: USERS_TABLE,
@@ -107,15 +147,21 @@ const findCustomersByFacebookId = (dynamo, facebookId) => dynamo.query({
     return null;
 });
 
-const usersWithMutedBot = (dynamo, botId, botStatus) => dynamo.query({
-    TableName: USERS_TABLE,
-    IndexName: 'botStatus-botId-index',
-    KeyConditionExpression: 'botId = :botId and botStatus = :botStatus',
-    ExpressionAttributeValues: {
-        ':botId': botId,
-        ':botStatus': botStatus || 'muted'
-    }
-}).promise().then(data => data.Items);
+const usersWithMutedBot = (dynamo, botId, adminId, botStatus) =>
+    getBotAsAdmin(dynamo, botId, adminId).then(bot => {
+        if (!bot) {
+            throw unknownBotIdError;
+        }
+        return dynamo.query({
+            TableName: USERS_TABLE,
+            IndexName: 'botStatus-botId-index',
+            KeyConditionExpression: 'botId = :botId and botStatus = :botStatus',
+            ExpressionAttributeValues: {
+                ':botId': botId,
+                ':botStatus': botStatus || 'muted'
+            }
+        }).promise().then(data => data.Items);
+    });
 
 // Update
 
@@ -179,22 +225,79 @@ const updateCustomer = (dynamo, id, newValues) => dynamo.update({
 }).promise().then(data => data.Attributes);
 
 const noop = () => null;
+const addAdminToBot = (dynamo, botOwnerId, botId, adminCustomerId) => {
+    const dynamoUpdate = {
+        TableName: BOTS_TABLE,
+        Key: {
+            customerId: botOwnerId,
+            id: botId
+        },
+        UpdateExpression: 'SET admins = list_append(:adminId, admins)',
+        ExpressionAttributeValues: {
+            ':adminId': [adminCustomerId]
+        },
+        ReturnValues: 'ALL_NEW'
+    };
+    // add paramCustomerId to the list
+    return dynamo.update(dynamoUpdate).promise().then(data => data.Attributes);
+};
+
+const dynamoUpdateBotObject = (customerId, id, params) => {
+    const { botId, ...other } = params;
+    noop(botId);
+    return ({
+        TableName: BOTS_TABLE,
+        Key: {
+            customerId,
+            id
+        },
+        ReturnValues: 'ALL_NEW',
+        ...expressionParameters({ ...other })
+    });
+};
+
 const updateBot = (dynamo, paramId, paramCustomerId, newValues) => {
-    const { id, customerId, inviteCode, ...others } = newValues;
+    const { id, customerId, inviteCode, admins, ownerId, ...others } = newValues;
     noop(id, customerId, inviteCode);
     let params = others;
+
+    // special case, add an admin
+    if (admins === 'me' && customerId) {
+        return getBot(dynamo, customerId, paramId).then(bot => {
+            if (inviteCode !== bot.inviteCode) {
+                throw invalidIviteCodeError;
+            }
+            const isAdminAlready = isCustomerAdmin(bot, paramCustomerId);
+            if (isAdminAlready) {
+                return bot;
+            }
+            return addAdminToBot(dynamo, customerId, paramId, paramCustomerId);
+        });
+    }
+
+    // special case, regenerate invite code
     if (inviteCode === 'new') {
         params = Object.assign(params, { inviteCode: shortid.generate() });
     }
-    return dynamo.update({
-        TableName: BOTS_TABLE,
-        Key: {
-            customerId: paramCustomerId,
-            id: paramId
-        },
-        ReturnValues: 'ALL_NEW',
-        ...expressionParameters({ ...params })
-    }).promise().then(data => data.Attributes);
+
+    // special case, user making the request is not the bot ownerId
+    if (ownerId) {
+        // return `owner was passed ${ownerId} ${paramId}`;
+        return getBot(dynamo, ownerId, paramId).then(bot => {
+            const customerIsAdmin = isCustomerAdmin(bot, paramCustomerId);
+            if (!customerIsAdmin) {
+                throw customerNotAdminError;
+            }
+            return dynamo.update(
+                dynamoUpdateBotObject(ownerId, paramId, params)
+            ).promise().then(data => data.Attributes);
+        });
+    }
+
+    // regular bot update
+    return dynamo.update(
+        dynamoUpdateBotObject(paramCustomerId, paramId, params),
+    ).promise().then(data => data.Attributes);
 };
 
 const updateUser = (dynamo, paramId, paramBotId, newValues) => {
@@ -228,6 +331,7 @@ export {
     createBot,
     getBot,
     updateBot,
+    registerBot,
     createUser,
     getUser,
     updateUser,

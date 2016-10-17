@@ -1,6 +1,7 @@
 import config from '../config-sample';
 import ApiBuilder from 'claudia-api-builder';
 import AWS from 'aws-sdk';
+import { createSpell } from './sage';
 import { getFbUser } from './facebook';
 import {
     getCustomer,
@@ -10,6 +11,7 @@ import {
     createBot,
     getBot,
     updateBot,
+    registerBot,
     createUser,
     getUser,
     updateUser,
@@ -31,6 +33,13 @@ const ecommerceBot = {
     type: 'ecommerce',
     facebook: {},
     vtex: {},
+    replies: '{}'
+};
+
+const faqBot = {
+    type: 'faq',
+    facebook: {},
+    sage: {},
     replies: '{}'
 };
 
@@ -93,7 +102,7 @@ api.get('/v1/bots/{botId}', req =>
 api.get('/v1/users', req =>
     authAndGetCustomer(req).then(customer =>
         getBot(dynamo, customer.id, getParam(req, 'botId')).then(bot =>
-            usersWithMutedBot(dynamo, bot.id, getParam(req, 'botStatus'))
+            usersWithMutedBot(dynamo, bot.id, customer.id, getParam(req, 'botStatus'))
         )
 ), {
     error: { contentType: 'text/plain' }
@@ -114,16 +123,22 @@ api.post('/v1/customers', req =>
     auth(req).then(fbUser =>
         findCustomersByFacebookId(dynamo, fbUser.id).then(customers => {
             if (customers !== null) {
+                console.log('Returning customer');
                 return customers[0];
             }
             return createCustomer(
                 dynamo, fbUser.id, fbUser.name, fbUser.email
             ).then(customer =>
-                createBot(dynamo, customer.id, ecommerceBot).then(bot =>
-                    ({
-                        ...customer,
-                        bots: [bot.id]
-                    })
+                createSpell(
+                    fbUser.name, 'Magically created spell for a new customer'
+                    ).then(spell => {
+                        const magicalBot = { ...faqBot, sage: { spellId: spell } };
+                        return createBot(dynamo, customer.id, magicalBot).then(bot =>
+                        ({
+                            ...customer,
+                            bots: [bot.id]
+                        })
+                    ); }
                 )
             );
         })
@@ -133,10 +148,12 @@ api.post('/v1/customers', req =>
 });
 
 // Create bot
-api.post('/v1/bots', req =>
-    authAndGetCustomer(req).then(customer =>
-        createBot(dynamo, customer.id, ecommerceBot)
-), {
+api.post('/v1/bots', req => {
+    const botType = getParam(req, 'botType');
+    const schema = (botType === 'faq') ? faqBot : ecommerceBot;
+    return authAndGetCustomer(req).then(customer =>
+        createBot(dynamo, customer.id, schema)
+); }, {
     success: { code: 201 },
     error: { contentType: 'text/plain' }
 });
@@ -163,10 +180,32 @@ api.put('/v1/customers/{customerId}', req =>
 });
 
 // Update bot
-api.put('/v1/bots/{botId}', req =>
-    authAndGetCustomer(req).then(customer =>
+const addAdminCustomerToBot = req => auth(req).then(fbUser =>
+    findCustomersByFacebookId(dynamo, fbUser.id).then(customers => {
+        if (customers === null) {
+            throw unknownCustomerIdError;
+        }
+        return getCustomer(dynamo, customers[0].id, fbUser.id).then(customer =>
+            updateBot(dynamo, req.pathParams.botId, customer.id, req.body).then(bot => {
+                const botIsRegistered = customer.bots.indexOf(bot.id) !== -1;
+                if (botIsRegistered) {
+                    return customer;
+                }
+                return registerBot(dynamo, customer.id, bot.id);
+            })
+        );
+    })
+);
+api.put('/v1/bots/{botId}', req => {
+    // special case user accepting an admin invitation to manage a bot
+    if (req.body.admins) {
+        return addAdminCustomerToBot(req);
+    }
+    // regular update a bot request
+    return authAndGetCustomer(req).then(customer =>
         updateBot(dynamo, req.pathParams.botId, customer.id, req.body)
-), {
+    );
+}, {
     error: { contentType: 'text/plain' }
 });
 

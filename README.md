@@ -191,10 +191,32 @@ curl --request PUT \
 }
 ```
 
-##### Special case: Generate new bot config invite code
+##### Special cases
+###### Generate new bot config invite code
 
-If in the body of the request you send a ```"inviteCode"``` of value ```"new"```
+If in the body of the request you send an ```"inviteCode"``` of value ```"new"```
 then the existing inviteCode will be invalidated and a new one will be generated.
+
+###### Add a new customer to the list of bot admins
+
+If in the body of the request you send an ```"admins"``` key with value ```"me"```,
+and an ```"inviteCode"``` key with a valid inviteCode value, and a ```customerId```
+with the id of the bot owner the customer making the request will be added to
+the admins access list of that bot.
+
+Example body:
+
+```json
+{
+	"admins": "me",
+	"inviteCode": "ry7ECzB0",
+	"customerId": "735aa084-c5bb-4808-a8a2-ffe6d83f0c0d"
+}
+```
+
+###### Remove a customer from the list of bot admins
+
+TBD
 
 ### Users
 
@@ -255,12 +277,11 @@ GET ```/v1/users```
 
 ##### Query string parameters
 - botId
-- customerId
 
 ##### curl example
 ```shell
 curl --request GET \
-  --url 'https://api.example.com/v1/users?botId=00950d32-2059-42c7-8f91-b30515fc7f15&customerId=91a6f56d-870a-41ec-bdb2-22740aaa9a4f' \
+  --url 'https://api.example.com/v1/users?botId=00950d32-2059-42c7-8f91-b30515fc7f15' \
   --header 'authorization: Bearer EAA...DZD' \
   --header 'content-type: application/json'
 
